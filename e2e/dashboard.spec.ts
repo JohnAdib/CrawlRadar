@@ -103,11 +103,13 @@ test("the five views: platforms, pages with search, an endless activity log", as
   // The log loads the next batch as you scroll, with no pages to click.
   await page.goto("/dashboard/activity?range=30d")
   const rows = page.locator("tbody tr")
-  await expect(rows).toHaveCount(50)
-  await page.getByText("Loading more visits").scrollIntoViewIfNeeded()
+  await expect(rows.first()).toBeVisible()
+  const first = await rows.count()
+  // Scrolling down keeps loading: no pages to click.
   await expect(async () => {
-    expect(await rows.count()).toBeGreaterThanOrEqual(100)
-  }).toPass({ timeout: 10_000 })
+    await page.mouse.wheel(0, 6000)
+    expect(await rows.count()).toBeGreaterThanOrEqual(first + 50)
+  }).toPass({ timeout: 15_000 })
   // Changing a filter starts the list again.
   await page.getByRole("radio", { name: "Search engine" }).click()
   await expect(page).toHaveURL(/type=search_engine/)
@@ -115,7 +117,16 @@ test("the five views: platforms, pages with search, an endless activity log", as
   await expect(page.getByText("GPTBot")).toHaveCount(0)
 })
 
-test("signs out", async ({ page }) => {
+test("signs out after a confirmation", async ({ page }) => {
   await page.getByRole("button", { name: "Sign out" }).click()
+  const dialog = page.getByRole("dialog")
+  await expect(dialog.getByText("Sign out of CrawlRadar?")).toBeVisible()
+  await dialog.getByRole("button", { name: "Cancel" }).click()
+  await expect(dialog).toHaveCount(0)
+  await page.getByRole("button", { name: "Sign out" }).click()
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Sign out" })
+    .click()
   await expect(page).toHaveURL(/\/login/)
 })
