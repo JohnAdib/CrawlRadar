@@ -3,7 +3,7 @@
 import { Button } from "@crawlradar/ui/components/button"
 import { Download } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 
 import { DashboardView } from "@/components/dashboard/view"
@@ -25,6 +25,19 @@ export function DemoDashboard({
     site: "demo",
     range: "7d",
   })
+
+  // Back/forward restore the demo view recorded for that history entry.
+  useEffect(() => {
+    const restore = (event: PopStateEvent) =>
+      setFilters(
+        (event.state?.crawlradarDemo as typeof filters | undefined) ?? {
+          site: "demo",
+          range: "7d",
+        }
+      )
+    window.addEventListener("popstate", restore)
+    return () => window.removeEventListener("popstate", restore)
+  }, [])
 
   const options = useMemo(
     () => ({
@@ -58,7 +71,15 @@ export function DemoDashboard({
       filters={filters}
       domain={DEMO_DOMAIN}
       now={now}
-      onChange={(change) => setFilters((f) => ({ ...f, ...change }))}
+      onChange={(change) => {
+        const next = { ...filters, ...change }
+        // Opening or leaving a page/platform report is a navigation: record it so
+        // the browser's Back button returns to the previous view of the demo.
+        if (next.page !== filters.page || next.platform !== filters.platform) {
+          window.history.pushState({ crawlradarDemo: next }, "")
+        }
+        setFilters(next)
+      }}
       actions={
         <Button
           variant="outline"

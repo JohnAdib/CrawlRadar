@@ -20,6 +20,7 @@ import { ChevronRight } from "lucide-react"
 import { BrandLogo } from "@/components/brand-logo"
 import { BOT_TYPES, type BotType } from "@/lib/filters"
 import { formatNumber, timeAgo, visits } from "@/lib/format"
+import { platformColor } from "@/lib/platforms"
 import type { Stats } from "@/lib/stats"
 
 export function TypeBadge({ type }: { type: BotType }) {
@@ -166,18 +167,50 @@ export function Referrers({ referrers }: { referrers: Stats["referrers"] }) {
   if (referrers.length === 0) {
     return <Empty>No visitors from AI assistants in this range yet.</Empty>
   }
+  const total = referrers.reduce((sum, r) => sum + r.visits, 0)
+  const share = (visits: number) => Math.round((visits / total) * 100)
   return (
-    <BarList
-      rows={referrers.map((r) => ({
-        key: r.source,
-        label: (
-          <span className="flex items-center gap-2">
-            <BrandLogo name={r.source} /> {r.source}
-          </span>
-        ),
-        value: r.visits,
-      }))}
-    />
+    <div className="flex flex-col gap-4">
+      {/* Share of AI referrals per assistant, in each brand's colour. */}
+      <div
+        className="flex h-2.5 w-full gap-0.5 overflow-hidden rounded-full"
+        role="img"
+        aria-label={referrers
+          .map((r) => `${r.source} ${share(r.visits)}%`)
+          .join(", ")}
+      >
+        {referrers.map((r) => (
+          <span
+            key={r.source}
+            className="h-full transition-[width] duration-700"
+            style={{
+              width: `${(r.visits / total) * 100}%`,
+              backgroundColor: platformColor(r.platform),
+            }}
+          />
+        ))}
+      </div>
+      <ul className="grid grid-cols-[repeat(auto-fit,minmax(9.5rem,1fr))] gap-3">
+        {referrers.map((r) => (
+          <li
+            key={r.source}
+            className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3 transition-colors hover:bg-muted/70"
+          >
+            <span className="flex items-center gap-2 font-medium text-sm">
+              <BrandLogo name={r.source} /> {r.source}
+            </span>
+            <span className="flex items-baseline justify-between gap-2">
+              <span className="font-semibold text-xl tabular-nums">
+                {formatNumber(r.visits)}
+              </span>
+              <span className="text-muted-foreground text-xs tabular-nums">
+                {share(r.visits)}%
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
 
@@ -201,7 +234,7 @@ export function Heatmap({ cells }: { cells: Stats["heatmap"] }) {
                 <Tooltip key={hour} delayDuration={0} disableHoverableContent>
                   <TooltipTrigger asChild>
                     <span
-                      className="aspect-square rounded-[3px] bg-muted transition-transform duration-150 hover:scale-125 hover:ring-2 hover:ring-chart-1/50"
+                      className="h-3.5 rounded-[3px] bg-muted transition-transform duration-150 hover:scale-110 hover:ring-2 hover:ring-chart-1/50"
                       style={
                         value
                           ? {

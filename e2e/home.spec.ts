@@ -34,6 +34,16 @@ test("the demo dashboard on the home page is interactive", async ({ page }) => {
   await expect(demo.getByText("GPTBot")).toHaveCount(0)
 
   await demo.getByRole("button", { name: "Clear filters" }).click()
+
+  // A report opened in the demo closes with the browser's Back button.
+  await demo
+    .getByRole("button", { name: /\/pricing/ })
+    .first()
+    .click()
+  await expect(demo.getByText("Page report")).toBeVisible()
+  await page.goBack()
+  await expect(demo.getByText("Page report")).toHaveCount(0)
+  await expect(page).toHaveURL(/\/$/)
   await expect(demo.getByText("GPTBot").first()).toBeVisible()
 
   // Example data can't be exported; the button explains how to get real data.

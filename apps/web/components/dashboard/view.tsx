@@ -348,6 +348,7 @@ export function DashboardView({
                   index={2}
                   title="AI referrals by source"
                   description="Assistants sending people to your site"
+                  className="lg:flex-1"
                 >
                   <Referrers referrers={stats.referrers} />
                 </Panel>
@@ -366,6 +367,7 @@ export function DashboardView({
                 <Panel
                   index={4}
                   title="Visits by platform"
+                  className="lg:flex-1"
                   description={
                     filters.platform
                       ? "This report covers one platform"
