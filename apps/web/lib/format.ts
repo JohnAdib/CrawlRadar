@@ -5,8 +5,8 @@ const UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
   ["minute", 60_000],
 ]
 
-export function timeAgo(iso: string): string {
-  const diff = new Date(iso).getTime() - Date.now()
+export function timeAgo(iso: string, now: number = Date.now()): string {
+  const diff = new Date(iso).getTime() - now
   for (const [unit, ms] of UNITS) {
     if (Math.abs(diff) >= ms)
       return relative.format(Math.round(diff / ms), unit)

@@ -15,13 +15,14 @@ import {
   MousePointerClick,
   TrendingUp,
 } from "lucide-react"
-import Image from "next/image"
 import Link from "next/link"
 
 import { Animation } from "@/components/animation"
+import { DemoDashboard } from "@/components/dashboard/demo"
 import { GitHubIcon } from "@/components/github-icon"
 import { Logo } from "@/components/logo"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { appOrigin, snippet } from "@/lib/snippet"
 import { createClient } from "@/lib/supabase/server"
 
 const REPO = "https://github.com/JohnAdib/CrawlRadar"
@@ -90,6 +91,9 @@ export default async function HomePage() {
   const supabase = await createClient()
   const { data } = await supabase.auth.getClaims()
   const signedIn = Boolean(data?.claims)
+  const origin = await appOrigin()
+  // Rounded to the minute so the demo's relative times read cleanly.
+  const now = Math.floor(Date.now() / 60_000) * 60_000
   const cta = signedIn
     ? { href: "/dashboard", label: "Open dashboard" }
     : { href: "/login", label: "Get started free" }
@@ -156,32 +160,36 @@ export default async function HomePage() {
                 </a>
               </Button>
             </div>
-            <code className="mt-2 max-w-full truncate rounded-lg border bg-muted/60 px-3 py-2 font-mono text-xs text-muted-foreground">
-              &lt;script async
-              src=&quot;…/t.js?s=your-site&quot;&gt;&lt;/script&gt;
-            </code>
+            <div className="mt-2 flex max-w-full flex-col items-center gap-1.5">
+              <code className="max-w-full truncate rounded-lg border bg-muted/60 px-3 py-2 font-mono text-xs text-muted-foreground">
+                {snippet(origin, "YOUR_SITE_ID")}
+              </code>
+              <span className="text-xs text-muted-foreground">
+                The whole install: one line in your &lt;head&gt;
+              </span>
+            </div>
           </div>
 
-          <div className="mx-auto max-w-6xl px-4 pb-20 sm:px-6">
-            <div className="rounded-xl border bg-muted/40 p-1.5 shadow-2xl shadow-primary/5 sm:p-2">
-              <Image
-                src="/dashboard-light.png"
-                alt="CrawlRadar dashboard showing AI crawler visits by platform"
-                width={2880}
-                height={2000}
-                priority
-                sizes="(min-width: 1152px) 1152px, 100vw"
-                className="rounded-lg border dark:hidden"
-              />
-              <Image
-                src="/dashboard-dark.png"
-                alt="CrawlRadar dashboard showing AI crawler visits by platform"
-                width={2880}
-                height={2000}
-                priority
-                sizes="(min-width: 1152px) 1152px, 100vw"
-                className="hidden rounded-lg border dark:block"
-              />
+          <div
+            id="demo"
+            className="mx-auto max-w-7xl scroll-mt-20 px-2 pb-20 sm:px-6"
+          >
+            <div className="rounded-2xl border bg-muted/40 p-2 shadow-2xl shadow-primary/5 sm:p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 px-2 pt-1 pb-3 text-xs text-muted-foreground sm:px-3">
+                <span className="flex items-center gap-2">
+                  <span className="relative flex size-2">
+                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-green-500 opacity-75" />
+                    <span className="relative inline-flex size-2 rounded-full bg-green-500" />
+                  </span>
+                  Live demo with example data. Try the filters.
+                </span>
+                <Badge variant="outline" className="bg-background">
+                  Example data
+                </Badge>
+              </div>
+              <div className="rounded-xl border bg-background p-3 sm:p-6">
+                <DemoDashboard now={now} />
+              </div>
             </div>
           </div>
         </section>
