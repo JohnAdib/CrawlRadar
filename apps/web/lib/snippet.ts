@@ -1,16 +1,14 @@
-import { headers } from "next/headers"
-
-/** Public origin of this dashboard (e.g. https://crawlradar.vercel.app), from the request. */
-export async function appOrigin(): Promise<string> {
-  const h = await headers()
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000"
-  const proto =
-    h.get("x-forwarded-proto") ??
-    (host.startsWith("localhost") ? "http" : "https")
-  return `${proto}://${host}`
-}
+// The tags a site owner pastes into their pages. Pure, so client components can use it.
 
 /** The one tag a site owner pastes into their <head>. */
 export function snippet(origin: string, siteId: string): string {
   return `<script async src="${origin}/t.js?s=${siteId}"></script>`
+}
+
+/**
+ * Optional no-JavaScript fallback: a 1x1 image inside <noscript>. Without a script the page
+ * URL comes from the Referer header, so the image asks the browser to send it in full.
+ */
+export function pixel(origin: string, siteId: string): string {
+  return `<noscript><img src="${origin}/api/collect?t=img&sid=${siteId}" alt="" width="1" height="1" referrerpolicy="no-referrer-when-downgrade"></noscript>`
 }

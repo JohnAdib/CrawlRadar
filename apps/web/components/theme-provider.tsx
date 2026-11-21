@@ -34,28 +34,26 @@ function isTypingTarget(target: EventTarget | null) {
   )
 }
 
+/** "d" on its own, outside a text field, toggles the theme. */
+function isThemeHotkey(event: KeyboardEvent) {
+  const modified = event.metaKey || event.ctrlKey || event.altKey
+  return (
+    !event.defaultPrevented &&
+    !event.repeat &&
+    !modified &&
+    event.key.toLowerCase() === "d" &&
+    !isTypingTarget(event.target)
+  )
+}
+
 function ThemeHotkey() {
   const { resolvedTheme, setTheme } = useTheme()
 
   React.useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      if (event.defaultPrevented || event.repeat) {
-        return
+      if (isThemeHotkey(event)) {
+        setTheme(resolvedTheme === "dark" ? "light" : "dark")
       }
-
-      if (event.metaKey || event.ctrlKey || event.altKey) {
-        return
-      }
-
-      if (event.key.toLowerCase() !== "d") {
-        return
-      }
-
-      if (isTypingTarget(event.target)) {
-        return
-      }
-
-      setTheme(resolvedTheme === "dark" ? "light" : "dark")
     }
 
     window.addEventListener("keydown", onKeyDown)

@@ -18,3 +18,12 @@ export const formatNumber = (n: number) => new Intl.NumberFormat("en").format(n)
 
 export const visits = (n: number) =>
   `${formatNumber(n)} visit${n === 1 ? "" : "s"}`
+
+/** Hostname of a URL, or the input unchanged when it isn't a valid URL. */
+export function hostname(url: string): string {
+  try {
+    return new URL(url).hostname
+  } catch {
+    return url
+  }
+}

@@ -1,5 +1,5 @@
 import { AddSiteProvider } from "@/components/add-site-dialog"
-import { appOrigin } from "@/lib/snippet"
+import { appOrigin } from "@/lib/origin"
 
 export default async function SitesLayout({
   children,

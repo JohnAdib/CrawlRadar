@@ -1,10 +1,10 @@
 "use client"
 
-import { useRouter } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { createContext, useContext, useState, useTransition } from "react"
 
 import type { FilterChange } from "@/components/dashboard/filters"
-import { SiteSwitcher } from "@/components/dashboard/filters"
+import { SiteSwitcher } from "@/components/dashboard/site-switcher"
 import { DashboardSkeleton } from "@/components/dashboard/skeleton"
 import { type Filters, toQuery } from "@/lib/filters"
 
@@ -36,13 +36,14 @@ export function DashboardShell({
   children: React.ReactNode
 }) {
   const router = useRouter()
+  const pathname = usePathname()
   const [pending, startTransition] = useTransition()
   const [switching, setSwitching] = useState(false)
 
   function navigate(change: FilterChange) {
     setSwitching(Boolean(change.site && change.site !== filters.site))
     startTransition(() =>
-      router.push(`/dashboard${toQuery({ ...filters, ...change })}`, {
+      router.push(`${pathname}${toQuery({ ...filters, ...change })}`, {
         scroll: false,
       })
     )

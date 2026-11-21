@@ -14,10 +14,21 @@ export const BOT_TYPES = {
   search: "AI search",
   assistant: "AI assistant",
   referral: "AI referral",
+  search_engine: "Search engine",
   unknown: "Unknown",
 } as const
 
 export type BotType = keyof typeof BOT_TYPES
+
+/** Chart colour per bot type. */
+export const TYPE_COLORS: Record<BotType, string> = {
+  training: "var(--chart-1)",
+  search: "var(--chart-2)",
+  assistant: "var(--chart-3)",
+  referral: "var(--chart-4)",
+  search_engine: "var(--chart-5)",
+  unknown: "var(--muted-foreground)",
+}
 
 export interface Filters {
   site?: string
@@ -50,10 +61,11 @@ export function sinceFor(range: Range): string {
   return new Date(Date.now() - RANGES[range].ms).toISOString()
 }
 
-export function toQuery(filters: Partial<Filters>): string {
+/** "?site=…&range=7d" from any string params; empty values are left out. */
+export function toQuery(params: object): string {
   const query = new URLSearchParams()
-  for (const [key, value] of Object.entries(filters))
-    if (value) query.set(key, value)
+  for (const [key, value] of Object.entries(params))
+    if (value) query.set(key, String(value))
   const text = query.toString()
   return text ? `?${text}` : ""
 }

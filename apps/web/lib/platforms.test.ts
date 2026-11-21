@@ -1,6 +1,8 @@
+import { existsSync } from "node:fs"
+import { fileURLToPath } from "node:url"
 import { expect, test } from "vitest"
 
-import { logoFor, platformColor } from "./platforms"
+import { LOGOS, logoFor, platformColor } from "./platforms"
 
 test("known platforms get their colour, unknown ones a neutral grey", () => {
   expect(platformColor("OpenAI")).toBe("#10a37f")
@@ -15,4 +17,15 @@ test("logos resolve for platforms and assistants, with mono marked", () => {
     mono: false,
   })
   expect(logoFor("Common Crawl")).toBeNull()
+})
+
+test("every logo file exists, including the Chinese AI platforms", () => {
+  for (const name of Object.keys(LOGOS)) {
+    const path = fileURLToPath(
+      new URL(`../public${logoFor(name)!.src}`, import.meta.url)
+    )
+    expect(existsSync(path), name).toBe(true)
+  }
+  expect(logoFor("Kimi")?.src).toBe("/logos/kimi-color.svg")
+  expect(logoFor("xAI")?.mono).toBe(true)
 })

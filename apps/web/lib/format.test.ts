@@ -1,6 +1,6 @@
 import { expect, test } from "vitest"
 
-import { formatNumber, timeAgo, visits } from "./format"
+import { formatNumber, hostname, timeAgo, visits } from "./format"
 
 const NOW = new Date("2026-01-31T12:00:00Z").getTime()
 
@@ -23,4 +23,9 @@ test("visits pluralises", () => {
   expect(visits(1)).toBe("1 visit")
   expect(visits(0)).toBe("0 visits")
   expect(visits(2500)).toBe("2,500 visits")
+})
+
+test("hostname extracts the host, or keeps text that isn't a URL", () => {
+  expect(hostname("https://chatgpt.com/c/123")).toBe("chatgpt.com")
+  expect(hostname("not a url")).toBe("not a url")
 })

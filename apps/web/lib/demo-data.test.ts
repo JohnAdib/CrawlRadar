@@ -1,5 +1,7 @@
 import { describe, expect, test } from "vitest"
 
+import { classify } from "../../../supabase/functions/_shared/bots"
+
 import {
   DEMO_VISITORS,
   generateDemoEvents,
@@ -70,4 +72,14 @@ describe("generateDemoEvents", () => {
   test("uses the default size", () => {
     expect(generateDemoEvents(NOW)).toHaveLength(4000)
   })
+})
+
+test("every demo visitor is classified exactly as the real tracker would", () => {
+  for (const v of DEMO_VISITORS) {
+    expect(classify(v.user_agent, v.referrer), v.bot_name).toEqual({
+      name: v.bot_name,
+      platform: v.platform,
+      type: v.bot_type,
+    })
+  }
 })

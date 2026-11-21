@@ -4,21 +4,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@crawlradar/ui/components/card"
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@crawlradar/ui/components/empty"
 import { ChevronRight } from "lucide-react"
 import type { Metadata } from "next"
 import Link from "next/link"
 
 import { AddSiteButton } from "@/components/add-site-dialog"
-import { Animation } from "@/components/animation"
-import { Tag } from "@/components/head-tag"
 import { PageHeader } from "@/components/page-header"
 import { Favicon, SitePreview } from "@/components/site-preview"
 import { SiteStatus } from "@/components/site-status"
@@ -35,31 +25,13 @@ export default async function SitesPage() {
   const supabase = await createClient()
   const { data: sites } = await supabase
     .from("sites")
-    .select("id, domain, created_at")
+    .select("id, domain, created_at, installed_at")
     .order("created_at")
 
-  if (!sites?.length) {
-    return (
-      <Empty className="min-h-[70svh]">
-        <EmptyHeader>
-          <EmptyMedia>
-            <Animation name="radar" className="size-36" />
-          </EmptyMedia>
-          <EmptyTitle className="text-xl">Add your first website</EmptyTitle>
-          <EmptyDescription>
-            CrawlRadar shows which AI crawlers, like GPTBot, ClaudeBot and
-            PerplexityBot, read your site. Setup is one line in your <Tag />.
-          </EmptyDescription>
-        </EmptyHeader>
-        <EmptyContent>
-          <AddSiteButton size="lg" />
-        </EmptyContent>
-      </Empty>
-    )
-  }
-
+  // The (app) layout guarantees at least one installed site.
+  const list = sites ?? []
   const activity = await Promise.all(
-    sites.map((site) => siteActivity(supabase, site.id))
+    list.map((site) => siteActivity(supabase, site.id))
   )
 
   return (
@@ -71,7 +43,7 @@ export default async function SitesPage() {
       />
 
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {sites.map((site, i) => (
+        {list.map((site, i) => (
           <li
             key={site.id}
             className="animate-in fade-in motion-reduce:animate-none slide-in-from-bottom-2 fill-mode-both"
@@ -81,7 +53,7 @@ export default async function SitesPage() {
             }}
           >
             <Link
-              href={`/sites/${site.id}`}
+              href={`/dashboard/settings?site=${site.id}`}
               className="group block h-full rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
             >
               <Card className="h-full gap-0 overflow-hidden py-0 transition-[border-color,box-shadow] duration-200 group-hover:border-foreground/25 group-hover:shadow-lg">
@@ -97,7 +69,10 @@ export default async function SitesPage() {
                     <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
                   </div>
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <SiteStatus lastSeen={activity[i]!.lastSeen} />
+                    <SiteStatus
+                      lastSeen={activity[i]!.lastSeen}
+                      installed={Boolean(site.installed_at)}
+                    />
                     <CardDescription className="tabular-nums">
                       {visits(activity[i]!.visits30d)} · 30d
                     </CardDescription>

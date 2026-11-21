@@ -1,29 +1,33 @@
-import assert from "node:assert/strict"
-import { test } from "vitest"
+import { expect, test } from "vitest"
 
-import { csvCell, csvRow } from "./csv.ts"
+import { toCsv } from "./csv"
 
-test("quotes cells with commas, quotes and newlines", () => {
-  assert.equal(
-    csvCell("Mozilla/5.0 (KHTML, like Gecko)"),
-    '"Mozilla/5.0 (KHTML, like Gecko)"'
+const COLUMNS = ["bot_name", "user_agent", "referrer"] as const
+
+test("writes a header and quotes cells with commas, quotes and newlines", () => {
+  const csv = toCsv(COLUMNS, [
+    {
+      bot_name: "GPTBot",
+      user_agent: "Mozilla/5.0 (KHTML, like Gecko)",
+      referrer: null,
+    },
+    { bot_name: 'say "hi"', user_agent: "a\nb", referrer: undefined },
+  ])
+  expect(csv).toBe(
+    'bot_name,user_agent,referrer\r\nGPTBot,"Mozilla/5.0 (KHTML, like Gecko)",\r\n"say ""hi""","a\nb",\r\n'
   )
-  assert.equal(csvCell('say "hi"'), '"say ""hi"""')
-  assert.equal(csvCell("a\nb"), '"a\nb"')
-})
-
-test("leaves plain cells and empties alone", () => {
-  assert.equal(csvCell("GPTBot"), "GPTBot")
-  assert.equal(csvCell(null), "")
-  assert.equal(csvCell(undefined), "")
-  assert.equal(csvCell(42), "42")
 })
 
 test("neutralises spreadsheet formulas from untrusted input", () => {
-  assert.equal(csvCell("=HYPERLINK(1)"), "'=HYPERLINK(1)")
-  assert.equal(csvCell("@SUM(A1)"), "'@SUM(A1)")
+  const csv = toCsv(
+    COLUMNS,
+    [{ bot_name: "=HYPERLINK(1)", user_agent: "@SUM(A1)" }],
+    false
+  )
+  expect(csv).toBe(`"'=HYPERLINK(1)","'@SUM(A1)",\r\n`)
 })
 
-test("builds CRLF-terminated rows", () => {
-  assert.equal(csvRow(["a", "b,c", null]), 'a,"b,c",\r\n')
+test("returns nothing for an empty page without a header", () => {
+  expect(toCsv(COLUMNS, [], false)).toBe("")
+  expect(toCsv(COLUMNS, [])).toBe("bot_name,user_agent,referrer\r\n")
 })

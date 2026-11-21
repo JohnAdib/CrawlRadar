@@ -7,7 +7,8 @@ vi.mock("next/headers", () => ({
   }),
 }))
 
-const { appOrigin, snippet } = await import("./snippet")
+const { appOrigin } = await import("./origin")
+const { pixel, snippet } = await import("./snippet")
 
 beforeEach(() => headerValues.clear())
 
@@ -33,4 +34,11 @@ test("builds the one-line snippet", () => {
   expect(snippet("https://app.test", "abc")).toBe(
     '<script async src="https://app.test/t.js?s=abc"></script>'
   )
+})
+
+test("builds the no-JavaScript pixel fallback", () => {
+  const tag = pixel("https://app.test", "abc")
+  expect(tag).toContain('src="https://app.test/api/collect?t=img&sid=abc"')
+  expect(tag.startsWith("<noscript>")).toBe(true)
+  expect(tag).toContain('referrerpolicy="no-referrer-when-downgrade"')
 })

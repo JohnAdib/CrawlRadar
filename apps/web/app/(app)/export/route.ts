@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server"
 
-import { csvRow } from "@/lib/csv"
-import { parseFilters, sinceFor } from "@/lib/filters"
+import { toCsv } from "@/lib/csv"
+import { type Filters, parseFilters, sinceFor } from "@/lib/filters"
 import { createClient } from "@/lib/supabase/server"
 
 // PRD appendix columns first, then the remaining fields.
@@ -17,6 +17,30 @@ const COLUMNS = [
   "ip_hash",
 ] as const
 const PAGE = 1000 // PostgREST's default max rows per request
+
+type Client = Awaited<ReturnType<typeof createClient>>
+type Row = Record<(typeof COLUMNS)[number], unknown>
+
+/** One page of events, newest first, with the export's filters applied. */
+function eventsPage(
+  supabase: Client,
+  siteId: string,
+  filters: Filters,
+  since: string | null,
+  from: number
+) {
+  let query = supabase
+    .from("crawler_events")
+    .select(COLUMNS.join(","))
+    .eq("site_id", siteId)
+    .order("timestamp", { ascending: false })
+    .range(from, from + PAGE - 1)
+  if (since) query = query.gte("timestamp", since)
+  if (filters.platform) query = query.eq("platform", filters.platform)
+  if (filters.type) query = query.eq("bot_type", filters.type)
+  if (filters.page) query = query.eq("page_path", filters.page)
+  return query.overrideTypes<Row[]>()
+}
 
 /**
  * GET /export?site=<id>[&range=7d&platform=OpenAI&type=training]
@@ -34,23 +58,18 @@ export async function GET(request: NextRequest) {
     .maybeSingle()
   if (!site) return new Response("Site not found", { status: 404 })
 
-  let csv = csvRow([...COLUMNS])
+  const since = params.range ? sinceFor(filters.range) : null
+  let csv = toCsv(COLUMNS, [])
   for (let from = 0; ; from += PAGE) {
-    let query = supabase
-      .from("crawler_events")
-      .select(COLUMNS.join(","))
-      .eq("site_id", site.id)
-      .order("timestamp", { ascending: false })
-      .range(from, from + PAGE - 1)
-    if (params.range) query = query.gte("timestamp", sinceFor(filters.range))
-    if (filters.platform) query = query.eq("platform", filters.platform)
-    if (filters.type) query = query.eq("bot_type", filters.type)
-    if (filters.page) query = query.eq("page_path", filters.page)
-
-    const { data, error } =
-      await query.overrideTypes<Record<(typeof COLUMNS)[number], unknown>[]>()
+    const { data, error } = await eventsPage(
+      supabase,
+      site.id,
+      filters,
+      since,
+      from
+    )
     if (error) return new Response(error.message, { status: 500 })
-    for (const row of data) csv += csvRow(COLUMNS.map((c) => row[c]))
+    csv += toCsv(COLUMNS, data, false)
     if (data.length < PAGE) break
   }
 
