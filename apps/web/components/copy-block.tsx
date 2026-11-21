@@ -17,7 +17,7 @@ export function CopyBlock({ code, label }: { code: string; label: string }) {
 
   return (
     <div className="relative">
-      <pre className="overflow-x-auto rounded-lg border bg-muted p-4 pr-12 font-mono text-xs leading-relaxed">
+      <pre className="rounded-lg border bg-muted p-4 pr-12 font-mono text-xs leading-relaxed break-all whitespace-pre-wrap">
         <code>{code}</code>
       </pre>
       <Button
