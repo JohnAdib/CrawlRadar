@@ -1,16 +1,9 @@
-import { Button } from "@crawlradar/ui/components/button"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@crawlradar/ui/components/tooltip"
-import { LogOut } from "lucide-react"
 import Link from "next/link"
 
-import { signOut } from "@/app/login/actions"
 import { HeaderGlow } from "@/components/header-glow"
 import { Logo } from "@/components/logo"
 import { NavLinks } from "@/components/nav-links"
+import { SignOutButton } from "@/components/sign-out-button"
 import { ThemeToggle } from "@/components/theme-toggle"
 
 /** The signed-in header. During onboarding (`nav={false}`) the app's sections are hidden. */
@@ -33,21 +26,7 @@ export function AppHeader({
             {email}
           </span>
           <ThemeToggle />
-          <form action={signOut}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="submit"
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Sign out"
-                >
-                  <LogOut />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Sign out</TooltipContent>
-            </Tooltip>
-          </form>
+          <SignOutButton />
         </div>
       </div>
       <HeaderGlow />
