@@ -12,14 +12,16 @@ async function expectNoHorizontalScroll(page: Page) {
 test("home page and demo fit a phone screen", async ({ page }) => {
   await page.goto("/")
   await expect(
-    page.locator("#demo").getByText("AI crawler visits")
+    page.locator("#demo").getByText("AI crawler visits", { exact: true })
   ).toBeVisible()
   await expectNoHorizontalScroll(page)
 })
 
 test("dashboard and sites fit a phone screen", async ({ page }) => {
   await signIn(page)
-  await expect(page.getByText("AI crawler visits")).toBeVisible()
+  await expect(
+    page.getByText("AI crawler visits", { exact: true })
+  ).toBeVisible()
   await expectNoHorizontalScroll(page)
   await page.getByRole("link", { name: "Sites" }).click()
   await expect(page.getByRole("heading", { name: "Sites" })).toBeVisible()

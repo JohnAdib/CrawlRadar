@@ -15,11 +15,31 @@ test("home page shows the one-line install with a real URL", async ({
   ).toBeVisible()
 })
 
+test("speaks to the five people the product is for", async ({ page }) => {
+  await page.goto("/")
+  await expect(
+    page.getByRole("heading", {
+      name: "Built for everyone who owns the AI web",
+    })
+  ).toBeVisible()
+  for (const role of [
+    "Website owners",
+    "SEO professionals",
+    "Content strategists",
+    "Website administrators",
+    "Marketing managers",
+  ]) {
+    await expect(page.getByText(role, { exact: true })).toBeVisible()
+  }
+})
+
 test("the demo dashboard on the home page is interactive", async ({ page }) => {
   await page.goto("/")
   const demo = page.locator("#demo")
   await expect(demo.getByText("acme-shop.com · last 7 days")).toBeVisible()
-  await expect(demo.getByText("AI crawler visits")).toBeVisible()
+  await expect(
+    demo.getByText("AI crawler visits", { exact: true })
+  ).toBeVisible()
   await expect(demo.getByText("When crawlers visit")).toBeVisible()
 
   await demo.getByRole("radio", { name: "Last 30 days" }).click()

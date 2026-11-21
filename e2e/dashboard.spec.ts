@@ -78,6 +78,31 @@ test("exports the current view and all data as CSV", async ({ page }) => {
   )
 })
 
+test("the five views: platforms, pages with search, a paginated activity log", async ({
+  page,
+}) => {
+  await page.getByRole("link", { name: "Platforms", exact: true }).click()
+  await expect(page.getByText("Share of visits")).toBeVisible()
+  await page.getByRole("button", { name: "Anthropic" }).click()
+  await expect(page).toHaveURL(/\/dashboard\?.*platform=Anthropic/)
+  await expect(page.getByText("Platform report")).toBeVisible()
+
+  await page.goto("/dashboard/pages")
+  await page.getByLabel("Search pages").fill("pricing")
+  await expect(page.getByRole("button", { name: "/pricing" })).toBeVisible()
+  await expect(page.getByRole("button", { name: "/about" })).toHaveCount(0)
+
+  await page.goto("/dashboard/activity?range=30d")
+  await expect(page.getByText(/Showing 1–50 of/)).toBeVisible()
+  await page.getByRole("link", { name: "Next page" }).click()
+  await expect(page).toHaveURL(/p=2/)
+  await expect(page.getByText(/Showing 51–100 of/)).toBeVisible()
+  // Changing a filter starts the log again from the first page.
+  await page.getByRole("radio", { name: "Search engine" }).click()
+  await expect(page).not.toHaveURL(/p=2/)
+  await expect(page.getByText("Googlebot").first()).toBeVisible()
+})
+
 test("signs out", async ({ page }) => {
   await page.getByRole("button", { name: "Sign out" }).click()
   await expect(page).toHaveURL(/\/login/)
