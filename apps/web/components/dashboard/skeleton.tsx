@@ -15,24 +15,14 @@ function PanelSkeleton({ bodyClassName = "h-80" }: { bodyClassName?: string }) {
   )
 }
 
-/** Placeholder with the dashboard's exact layout, shown while data loads. */
-export function DashboardSkeleton({
-  withHeader = true,
-}: {
-  withHeader?: boolean
-}) {
+/** Placeholder with the layout of a dashboard view's content, shown while data loads. */
+export function DashboardSkeleton() {
   return (
     <div
       className="flex flex-col gap-4 sm:gap-6"
       role="status"
       aria-label="Loading dashboard"
     >
-      {withHeader && (
-        <div className="flex flex-col gap-2">
-          <Skeleton className="h-8 w-56" />
-          <Skeleton className="h-4 w-40" />
-        </div>
-      )}
       <div className="grid grid-cols-2 gap-2 sm:flex">
         <Skeleton className="col-span-2 h-9 sm:w-40" />
         <Skeleton className="h-9 sm:w-44" />

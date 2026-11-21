@@ -1,7 +1,8 @@
 // Server-side loaders shared by the dashboard views. RLS scopes every query to the user.
 import { redirect } from "next/navigation"
 
-import { parseFilters, sinceFor } from "@/lib/filters"
+import { afterCursor, type Cursor } from "@/lib/events"
+import { type Filters, parseFilters, sinceFor } from "@/lib/filters"
 import type { PageRow, Stats } from "@/lib/stats"
 import { createClient } from "@/lib/supabase/server"
 
@@ -60,19 +61,29 @@ export async function loadPages({ supabase, site, filters, since }: Loaded) {
 const EVENT_COLUMNS =
   "id, timestamp, bot_name, platform, bot_type, page_path, user_agent, referrer"
 
-/** One page of the activity log, newest first, with the total count. */
+/** What loadEvents needs: a client, the site, its filters and the range start. */
+export interface EventsQuery {
+  supabase: Awaited<ReturnType<typeof createClient>>
+  site: { id: string }
+  filters: Filters
+  since: string
+}
+
+/** One batch of the activity log, newest first; the first batch also counts the total. */
 export async function loadEvents(
-  { supabase, site, filters, since }: Loaded,
-  page: number,
-  pageSize: number
+  { supabase, site, filters, since }: EventsQuery,
+  pageSize: number,
+  cursor?: Cursor
 ) {
   let query = supabase
     .from("crawler_events")
-    .select(EVENT_COLUMNS, { count: "exact" })
+    .select(EVENT_COLUMNS, cursor ? undefined : { count: "exact" })
     .eq("site_id", site.id)
     .gte("timestamp", since)
     .order("timestamp", { ascending: false })
-    .range((page - 1) * pageSize, page * pageSize - 1)
+    .order("id", { ascending: false })
+    .limit(pageSize)
+  if (cursor) query = query.or(afterCursor(cursor))
   if (filters.platform) query = query.eq("platform", filters.platform)
   if (filters.type) query = query.eq("bot_type", filters.type)
   if (filters.page) query = query.eq("page_path", filters.page)

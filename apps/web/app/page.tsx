@@ -34,7 +34,7 @@ export default async function HomePage() {
           <Reveal delay={0.9} className="mx-auto max-w-6xl px-4 pb-14 sm:px-6">
             <CrawlerMarquee />
           </Reveal>
-          <DemoSection now={now} signedIn={signedIn} />
+          <DemoSection now={now} origin={origin} signedIn={signedIn} />
         </section>
         <Personas />
         <Features />

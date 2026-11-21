@@ -14,6 +14,10 @@ test("tracked visits flow into every dashboard view, and sites can be managed", 
   // Before any AI traffic the dashboard listens instead of showing empty charts.
   await expect(page.getByText("Listening for AI crawlers")).toBeVisible()
   await expect(page.getByRole("combobox", { name: "Platform" })).toHaveCount(0)
+  // The views only appear once there is something to show.
+  await expect(
+    page.getByRole("navigation", { name: "Dashboard sections" })
+  ).toHaveCount(0)
 
   // A crawler that doesn't run JavaScript, hitting the pixel endpoint directly.
   const pixel = await hit(page, siteId, `https://${domain}/docs`)
@@ -39,10 +43,10 @@ test("tracked visits flow into every dashboard view, and sites can be managed", 
   await expect(page.getByRole("button", { name: "/docs" })).toBeVisible()
   await page.getByRole("link", { name: "Activity log", exact: true }).click()
   await expect(page.getByText("DeepSeekBot", { exact: true })).toBeVisible()
-  await expect(page.getByText(/Showing 1–2 of 2/)).toBeVisible()
+  await expect(page.getByText("That's all 2 visits")).toBeVisible()
   await page.getByRole("link", { name: "Settings", exact: true }).click()
   await expect(page.getByText(`t.js?s=${siteId}`)).toBeVisible()
-  await page.getByRole("tab", { name: "Pixel only" }).click()
+  await page.getByRole("tab", { name: "Pixel (no JavaScript)" }).click()
   await expect(page.getByText(`sid=${siteId}`)).toBeVisible()
 
   // A second site with no data yet: switching shows the install state for it.

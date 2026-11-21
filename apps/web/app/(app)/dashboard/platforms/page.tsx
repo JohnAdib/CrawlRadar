@@ -3,7 +3,6 @@ import type { Metadata } from "next"
 import { LiveFrame } from "@/components/dashboard/live-frame"
 import { LivePlatforms } from "@/components/dashboard/live-views"
 import { DashboardShell } from "@/components/dashboard/shell"
-import { ExportMenu } from "@/components/export-menu"
 
 import { loadDashboard, loadStats, type SearchParams } from "../data"
 
@@ -23,13 +22,7 @@ export default async function PlatformsPage({
   const stats = await loadStats({ ...ctx, filters })
   return (
     <DashboardShell filters={filters}>
-      <LiveFrame
-        domain={ctx.site.domain}
-        sites={ctx.sites}
-        platforms={stats.platforms}
-        hidePlatform
-        actions={<ExportMenu filters={filters} />}
-      >
+      <LiveFrame platforms={stats.platforms} hidePlatform>
         <LivePlatforms stats={stats} />
       </LiveFrame>
     </DashboardShell>

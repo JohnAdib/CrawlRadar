@@ -18,6 +18,9 @@ test("shows the demo site's crawler activity", async ({ page }) => {
   ]) {
     await expect(page.getByText(card, { exact: true })).toBeVisible()
   }
+  // PRD 7.1: the overview names the top platform and the top page.
+  await expect(page.getByText(/^Top platform: /)).toBeVisible()
+  await expect(page.getByText(/^Top page: \//)).toBeVisible()
   await expect(page.getByText("Visits by platform")).toBeVisible()
   await expect(page.getByText("Top pages")).toBeVisible()
 })
@@ -78,7 +81,7 @@ test("exports the current view and all data as CSV", async ({ page }) => {
   )
 })
 
-test("the five views: platforms, pages with search, a paginated activity log", async ({
+test("the five views: platforms, pages with search, an endless activity log", async ({
   page,
 }) => {
   await page.getByRole("link", { name: "Platforms", exact: true }).click()
@@ -92,15 +95,24 @@ test("the five views: platforms, pages with search, a paginated activity log", a
   await expect(page.getByRole("button", { name: "/pricing" })).toBeVisible()
   await expect(page.getByRole("button", { name: "/about" })).toHaveCount(0)
 
+  // The header stays put between views; only the content changes.
+  await expect(
+    page.getByRole("heading", { name: "AI crawler activity" })
+  ).toBeVisible()
+
+  // The log loads the next batch as you scroll, with no pages to click.
   await page.goto("/dashboard/activity?range=30d")
-  await expect(page.getByText(/Showing 1–50 of/)).toBeVisible()
-  await page.getByRole("link", { name: "Next page" }).click()
-  await expect(page).toHaveURL(/p=2/)
-  await expect(page.getByText(/Showing 51–100 of/)).toBeVisible()
-  // Changing a filter starts the log again from the first page.
+  const rows = page.locator("tbody tr")
+  await expect(rows).toHaveCount(50)
+  await page.getByText("Loading more visits").scrollIntoViewIfNeeded()
+  await expect(async () => {
+    expect(await rows.count()).toBeGreaterThanOrEqual(100)
+  }).toPass({ timeout: 10_000 })
+  // Changing a filter starts the list again.
   await page.getByRole("radio", { name: "Search engine" }).click()
-  await expect(page).not.toHaveURL(/p=2/)
+  await expect(page).toHaveURL(/type=search_engine/)
   await expect(page.getByText("Googlebot").first()).toBeVisible()
+  await expect(page.getByText("GPTBot")).toHaveCount(0)
 })
 
 test("signs out", async ({ page }) => {

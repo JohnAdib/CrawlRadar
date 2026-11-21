@@ -15,6 +15,44 @@ test("home page shows the one-line install with a real URL", async ({
   ).toBeVisible()
 })
 
+test("the theme switch toggles light and dark, every click", async ({
+  page,
+}) => {
+  await page.goto("/")
+  await page.waitForLoadState("networkidle") // clicks before hydration do nothing
+  const isDark = () =>
+    page.evaluate(() => document.documentElement.classList.contains("dark"))
+  const toggle = page.getByRole("button", {
+    name: "Toggle light and dark mode",
+  })
+  const start = await isDark()
+  for (const expected of [!start, start, !start]) {
+    await toggle.click()
+    await expect.poll(isDark).toBe(expected)
+    await expect
+      .poll(() => page.evaluate(() => localStorage.getItem("theme")))
+      .toBe(expected ? "dark" : "light")
+  }
+})
+
+test("the demo has the same five views as the dashboard", async ({ page }) => {
+  await page.goto("/")
+  const demo = page.locator("#demo")
+  const tabs = demo.getByRole("navigation", { name: "Dashboard sections" })
+  await tabs.getByRole("button", { name: "Platforms" }).click()
+  await expect(demo.getByText("Share of visits")).toBeVisible()
+  await tabs.getByRole("button", { name: "Pages" }).click()
+  await expect(demo.getByLabel("Search pages")).toBeVisible()
+  await tabs.getByRole("button", { name: "Activity log" }).click()
+  await expect(demo.locator("tbody tr").first()).toBeVisible()
+  await tabs.getByRole("button", { name: "Settings" }).click()
+  await expect(
+    demo.getByRole("tab", { name: "Pixel (no JavaScript)" })
+  ).toBeVisible()
+  await page.goBack()
+  await expect(demo.locator("tbody tr").first()).toBeVisible()
+})
+
 test("speaks to the five people the product is for", async ({ page }) => {
   await page.goto("/")
   await expect(
@@ -36,14 +74,16 @@ test("speaks to the five people the product is for", async ({ page }) => {
 test("the demo dashboard on the home page is interactive", async ({ page }) => {
   await page.goto("/")
   const demo = page.locator("#demo")
-  await expect(demo.getByText("acme-shop.com · last 7 days")).toBeVisible()
+  await expect(demo.getByText("acme-shop.com", { exact: true })).toBeVisible()
   await expect(
     demo.getByText("AI crawler visits", { exact: true })
   ).toBeVisible()
   await expect(demo.getByText("When crawlers visit")).toBeVisible()
 
   await demo.getByRole("radio", { name: "Last 30 days" }).click()
-  await expect(demo.getByText("acme-shop.com · last 30 days")).toBeVisible()
+  await expect(
+    demo.getByRole("radio", { name: "Last 30 days" })
+  ).toHaveAttribute("data-state", "on")
 
   await demo.getByRole("combobox", { name: "Platform" }).click()
   await page.getByRole("option", { name: "Anthropic" }).click()

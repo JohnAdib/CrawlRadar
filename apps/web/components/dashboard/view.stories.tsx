@@ -35,7 +35,6 @@ const meta = {
     ),
   ],
   args: {
-    title: "Example dashboard",
     stats: STATS,
     events: RECENT,
     filters: { site: "demo", range: "7d" },
@@ -73,5 +72,7 @@ export const NoMatches: Story = {
 
 /** The real home page demo: filters, reports and the Export toast all work. */
 export const Interactive: Story = {
-  render: () => <DemoDashboard now={NOW} />,
+  render: () => (
+    <DemoDashboard now={NOW} origin="https://crawlradar.vercel.app" />
+  ),
 }

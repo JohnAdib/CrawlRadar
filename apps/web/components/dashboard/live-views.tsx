@@ -3,17 +3,17 @@
 // Thin client wrappers that connect each view to the URL-driven dashboard navigation.
 import { useRouter } from "next/navigation"
 
-import {
-  ActivityTable,
-  type LogEvent,
-} from "@/components/dashboard/activity-table"
+import { moreEvents } from "@/app/(app)/dashboard/activity/actions"
+import { ActivityLog } from "@/components/dashboard/activity-log"
+import type { LogEvent } from "@/components/dashboard/activity-table"
 import { NoResults } from "@/components/dashboard/no-results"
 import { PagesView } from "@/components/dashboard/pages-view"
-import { Pagination } from "@/components/dashboard/pagination"
 import { Panel } from "@/components/dashboard/panel"
 import { PlatformsView } from "@/components/dashboard/platforms-view"
 import { useDashboardNav } from "@/components/dashboard/shell"
+import { LOG_PAGE_SIZE } from "@/lib/events"
 import { type Filters, toQuery } from "@/lib/filters"
+import { visits } from "@/lib/format"
 import type { PageRow, Stats } from "@/lib/stats"
 
 /** Opens the overview as a page or platform report. */
@@ -53,30 +53,27 @@ export function LivePages({ pages }: { pages: PageRow[] }) {
 export function LiveActivity({
   events,
   total,
-  page,
-  pageSize,
 }: {
   events: LogEvent[]
   total: number
-  page: number
-  pageSize: number
 }) {
   const { filters, navigate } = useDashboardNav()
   const open = useOpenReport()
   if (total === 0) return <NoResults filters={filters} onChange={navigate} />
+  const { site, ...params } = filters
   return (
     <Panel
       title="Activity log"
-      description="Every recorded visit, newest first"
+      description={`Every recorded visit, newest first · ${visits(total)}`}
     >
-      <ActivityTable events={events} onSelectPage={(p) => open({ page: p })} />
-      <Pagination
-        page={page}
-        pageSize={pageSize}
+      <ActivityLog
+        // A new filter starts a new list.
+        key={toQuery(filters)}
+        initial={events}
         total={total}
-        href={(p) =>
-          `/dashboard/activity${toQuery({ ...filters, p: p > 1 ? p : undefined })}`
-        }
+        pageSize={LOG_PAGE_SIZE}
+        loadMore={(cursor) => moreEvents(site, params, cursor)}
+        onSelectPage={(page) => open({ page })}
       />
     </Panel>
   )

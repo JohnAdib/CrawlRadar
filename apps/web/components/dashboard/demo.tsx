@@ -6,52 +6,65 @@ import { useRouter } from "next/navigation"
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 
-import { DashboardView } from "@/components/dashboard/view"
+import { DashboardHeader } from "@/components/dashboard/dashboard-header"
+import {
+  DashboardTabs,
+  type Section,
+} from "@/components/dashboard/dashboard-tabs"
+import { DemoView } from "@/components/dashboard/demo-views"
+import type { FilterChange } from "@/components/dashboard/filters"
 import { DEMO_DOMAIN, generateDemoEvents } from "@/lib/demo-data"
-import { type Filters, RANGES } from "@/lib/filters"
-import { computeStats, recentEvents } from "@/lib/stats"
+import type { Filters } from "@/lib/filters"
 
-/** The dashboard running entirely in the browser on generated example data. */
+type DemoState = { section: Section; filters: Filters & { site: string } }
+
+const START: DemoState = {
+  section: "overview",
+  filters: { site: "demo", range: "7d" },
+}
+
+/**
+ * The real dashboard (the same five views, header and tabs) running entirely in the
+ * browser on generated example data.
+ */
 export function DemoDashboard({
   now,
+  origin,
   signedIn,
 }: {
   now: number
+  origin: string
   signedIn?: boolean
 }) {
   const router = useRouter()
   const events = useMemo(() => generateDemoEvents(now), [now])
-  const [filters, setFilters] = useState<Filters & { site: string }>({
-    site: "demo",
-    range: "7d",
-  })
+  const [state, setState] = useState<DemoState>(START)
 
   // Back/forward restore the demo view recorded for that history entry.
   useEffect(() => {
     const restore = (event: PopStateEvent) =>
-      setFilters(
-        (event.state?.crawlradarDemo as typeof filters | undefined) ?? {
-          site: "demo",
-          range: "7d",
-        }
-      )
+      setState((event.state?.crawlradarDemo as DemoState | undefined) ?? START)
     window.addEventListener("popstate", restore)
     return () => window.removeEventListener("popstate", restore)
   }, [])
 
-  const options = useMemo(
-    () => ({
-      now: new Date(now),
-      since: new Date(now - RANGES[filters.range].ms),
-      platform: filters.platform,
-      type: filters.type,
-      page: filters.page,
-    }),
-    [now, filters]
-  )
-  const stats = useMemo(() => computeStats(events, options), [events, options])
-  const recent = useMemo(() => recentEvents(events, options), [events, options])
-
+  // Switching views or opening a report is a navigation: Back returns to the last view.
+  function go(section: Section, change: FilterChange = {}) {
+    const next = { section, filters: { ...state.filters, ...change } }
+    window.history.pushState({ crawlradarDemo: next }, "")
+    setState(next)
+  }
+  function filter(change: FilterChange) {
+    const { filters } = state
+    const report = "page" in change || "platform" in change
+    if (
+      report &&
+      (change.page !== filters.page || change.platform !== filters.platform)
+    ) {
+      return go(state.section, change)
+    }
+    setState({ ...state, filters: { ...filters, ...change } })
+  }
   function explainExport() {
     toast("This is example data", {
       description:
@@ -64,31 +77,36 @@ export function DemoDashboard({
   }
 
   return (
-    <DashboardView
-      title="Example dashboard"
-      stats={stats}
-      events={recent}
-      filters={filters}
-      domain={DEMO_DOMAIN}
-      now={now}
-      onChange={(change) => {
-        const next = { ...filters, ...change }
-        // Opening or leaving a page/platform report is a navigation: record it so
-        // the browser's Back button returns to the previous view of the demo.
-        if (next.page !== filters.page || next.platform !== filters.platform) {
-          window.history.pushState({ crawlradarDemo: next }, "")
+    <div className="flex flex-col gap-4 sm:gap-6">
+      <DashboardHeader
+        title="AI crawler activity"
+        subtitle={DEMO_DOMAIN}
+        actions={
+          state.section !== "settings" && (
+            <Button
+              variant="outline"
+              className="bg-background"
+              onClick={explainExport}
+            >
+              <Download /> <span className="hidden sm:inline">Export</span> CSV
+            </Button>
+          )
         }
-        setFilters(next)
-      }}
-      actions={
-        <Button
-          variant="outline"
-          className="bg-background"
-          onClick={explainExport}
-        >
-          <Download /> <span className="hidden sm:inline">Export</span> CSV
-        </Button>
-      }
-    />
+      />
+      <DashboardTabs
+        active={state.section}
+        onSelect={(section) => go(section)}
+      />
+      <DemoView
+        section={state.section}
+        events={events}
+        filters={state.filters}
+        now={now}
+        origin={origin}
+        onChange={filter}
+        onOpen={go}
+        onExport={explainExport}
+      />
+    </div>
   )
 }

@@ -3,7 +3,6 @@ import type { Metadata } from "next"
 import { LiveFrame } from "@/components/dashboard/live-frame"
 import { LivePages } from "@/components/dashboard/live-views"
 import { DashboardShell } from "@/components/dashboard/shell"
-import { ExportMenu } from "@/components/export-menu"
 
 import { loadDashboard, loadPages, loadStats, type SearchParams } from "../data"
 
@@ -23,12 +22,7 @@ export default async function PagesPage({
   ])
   return (
     <DashboardShell filters={filters}>
-      <LiveFrame
-        domain={ctx.site.domain}
-        sites={ctx.sites}
-        platforms={stats.platforms}
-        actions={<ExportMenu filters={filters} />}
-      >
+      <LiveFrame platforms={stats.platforms}>
         <LivePages pages={pages} />
       </LiveFrame>
     </DashboardShell>

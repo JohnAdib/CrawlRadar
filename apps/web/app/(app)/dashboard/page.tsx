@@ -1,7 +1,6 @@
 import type { Metadata } from "next"
 import { Listening } from "@/components/dashboard/listening"
 import { LiveDashboard } from "@/components/dashboard/live"
-import { LiveFrame } from "@/components/dashboard/live-frame"
 import { DashboardShell } from "@/components/dashboard/shell"
 import { appOrigin } from "@/lib/origin"
 import { snippet } from "@/lib/snippet"
@@ -22,30 +21,22 @@ export default async function DashboardPage({
   const ctx = await loadDashboard(searchParams)
   const [stats, recent] = await Promise.all([
     loadStats(ctx),
-    loadEvents(ctx, 1, 10),
+    loadEvents(ctx, 10),
   ])
 
   return (
     <DashboardShell filters={ctx.filters}>
       {stats.platforms.length === 0 ? (
-        // No data has ever arrived for this site: keep the install front and centre.
-        <LiveFrame
+        // No visit recorded yet: keep the install front and centre, without empty views.
+        <Listening
           domain={ctx.site.domain}
-          sites={ctx.sites}
-          platforms={[]}
-          filters={false}
-        >
-          <Listening
-            domain={ctx.site.domain}
-            code={snippet(await appOrigin(), ctx.site.id)}
-          />
-        </LiveFrame>
+          code={snippet(await appOrigin(), ctx.site.id)}
+        />
       ) : (
         <LiveDashboard
           stats={stats}
           events={recent.events}
           domain={ctx.site.domain}
-          sites={ctx.sites}
         />
       )}
     </DashboardShell>

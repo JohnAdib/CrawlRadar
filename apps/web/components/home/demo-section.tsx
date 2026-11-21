@@ -7,9 +7,11 @@ import { LiveDot } from "@/components/live-dot"
 /** The real dashboard running on example data, framed like a product shot. */
 export function DemoSection({
   now,
+  origin,
   signedIn,
 }: {
   now: number
+  origin: string
   signedIn: boolean
 }) {
   return (
@@ -26,15 +28,15 @@ export function DemoSection({
           <div className="relative flex flex-wrap items-center justify-between gap-2 px-2 pt-1 pb-3 text-muted-foreground text-xs sm:px-3">
             <span className="flex items-center gap-2">
               <LiveDot />
-              Live demo with example data. Try the filters, or click a page or
-              platform.
+              The real dashboard on example data. Switch views, try the filters,
+              or open a page or platform.
             </span>
             <Badge variant="outline" className="bg-background">
               Example data
             </Badge>
           </div>
           <div className="relative rounded-xl border bg-background p-3 sm:p-6">
-            <DemoDashboard now={now} signedIn={signedIn} />
+            <DemoDashboard now={now} origin={origin} signedIn={signedIn} />
           </div>
         </div>
       </DemoStage>

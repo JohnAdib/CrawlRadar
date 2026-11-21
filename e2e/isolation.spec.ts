@@ -76,7 +76,7 @@ test("a copied snippet on another domain cannot inject visits", async ({
       timeout: 1000,
     })
   }).toPass({ timeout: 15_000 })
-  await expect(owner.page.getByText("Showing 1–1 of 1")).toBeVisible()
+  await expect(owner.page.getByText("That's all 1 visit")).toBeVisible()
   await expect(owner.page.getByText("evil.test")).toHaveCount(0)
 
   await owner.context.close()

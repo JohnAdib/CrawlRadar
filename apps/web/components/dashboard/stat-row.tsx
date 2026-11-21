@@ -17,7 +17,7 @@ function bucketLabel(bucket: string, hourly: boolean): string {
   )
 }
 
-/** The four headline numbers: crawls, referrals, crawlers, pages. */
+/** Headline numbers: crawls (24h / 7d / 30d), referrals, crawlers with the top platform, pages with the top page. */
 export function StatRow({ stats, hourly }: { stats: Stats; hourly: boolean }) {
   const spark = (value: (p: Stats["timeline"][number]) => number) =>
     stats.timeline.map((p) => ({
@@ -25,6 +25,9 @@ export function StatRow({ stats, hourly }: { stats: Stats; hourly: boolean }) {
       value: value(p),
     }))
   const { totals } = stats
+  // PRD 7.1: the overview names the top platform and the top page.
+  const topPlatform = stats.by_platform[0]
+  const topPage = stats.top_pages[0]
   return (
     <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
       <StatCard
@@ -53,7 +56,11 @@ export function StatRow({ stats, hourly }: { stats: Stats; hourly: boolean }) {
         icon={Bot}
         label="Active crawlers"
         value={<AnimatedNumber value={stats.active_bots} />}
-        hint={`Across ${stats.active_platforms} platform${stats.active_platforms === 1 ? "" : "s"}`}
+        hint={
+          topPlatform
+            ? `Top platform: ${topPlatform.platform}`
+            : "No AI crawler visits in range"
+        }
       />
       <StatCard
         index={3}
@@ -61,8 +68,8 @@ export function StatRow({ stats, hourly }: { stats: Stats; hourly: boolean }) {
         label="Pages crawled"
         value={<AnimatedNumber value={stats.pages} />}
         hint={
-          stats.crawls > 0
-            ? `${(stats.crawls / Math.max(stats.pages, 1)).toFixed(1)} crawls per page`
+          topPage?.page_path
+            ? `Top page: ${topPage.page_path}`
             : "No AI crawler visits in range"
         }
       />

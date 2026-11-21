@@ -3,7 +3,6 @@
 import { useRef } from "react"
 
 import type { ActivityItem } from "@/components/dashboard/activity-feed"
-import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { FilterBar, type FilterChange } from "@/components/dashboard/filters"
 import { NoResults } from "@/components/dashboard/no-results"
 import { Overview } from "@/components/dashboard/overview"
@@ -19,19 +18,13 @@ export interface DashboardViewProps {
   domain: string
   onChange: (change: FilterChange) => void
   pending?: boolean
-  /** Site picker, shown next to the actions when the user has several sites. */
-  switcher?: React.ReactNode
-  actions?: React.ReactNode
-  /** Section tabs (live dashboard only). */
-  tabs?: React.ReactNode
   /** Link to the full Platforms view (live dashboard only). */
   platformsHref?: string
   /** Fixed clock for relative times (keeps server and client render identical). */
   now?: number
-  title?: string
 }
 
-/** The overview page, shared by the live dashboard and the home page demo. */
+/** The Overview view (filters and content), shared by the live dashboard and the demo. */
 export function DashboardView({
   stats,
   events,
@@ -39,12 +32,8 @@ export function DashboardView({
   domain,
   onChange,
   pending,
-  switcher,
-  actions,
-  tabs,
   platformsHref,
   now,
-  title = "AI crawler activity",
 }: DashboardViewProps) {
   const range = RANGES[filters.range].label
   const root = useRef<HTMLDivElement>(null)
@@ -61,13 +50,6 @@ export function DashboardView({
       className="group/dash flex scroll-mt-20 flex-col gap-4 sm:gap-6"
     >
       <ProgressBar active={pending} />
-      <DashboardHeader
-        title={title}
-        subtitle={`${domain} · last ${range}`}
-        switcher={switcher}
-        actions={actions}
-      />
-      {tabs}
       <FilterBar
         filters={filters}
         platforms={stats.platforms}

@@ -1,7 +1,5 @@
 import type { Metadata } from "next"
 
-import { LiveFrame } from "@/components/dashboard/live-frame"
-import { DashboardShell } from "@/components/dashboard/shell"
 import { DetailsCard } from "@/components/site/details-card"
 import { ExportCard } from "@/components/site/export-card"
 import { InstallCard } from "@/components/site/install-card"
@@ -31,35 +29,29 @@ export default async function SettingsPage({
     appOrigin(),
   ])
   return (
-    <DashboardShell filters={ctx.filters}>
-      <LiveFrame
-        domain={site.domain}
-        sites={ctx.sites}
-        platforms={[]}
-        filters={false}
-        actions={
-          <SiteStatus
-            lastSeen={activity.lastSeen}
-            installed={Boolean(site.installed_at)}
-          />
-        }
-      >
-        <div className="grid items-start gap-6 lg:grid-cols-3">
-          <div className="flex min-w-0 flex-col gap-6 lg:col-span-2">
-            <InstallCard
-              domain={site.domain}
-              code={snippet(origin, site.id)}
-              pixel={pixel(origin, site.id)}
+    <div className="fade-in grid animate-in items-start gap-6 duration-300 motion-reduce:animate-none lg:grid-cols-3">
+      <div className="flex min-w-0 flex-col gap-6 lg:col-span-2">
+        <InstallCard
+          domain={site.domain}
+          code={snippet(origin, site.id)}
+          pixel={pixel(origin, site.id)}
+        />
+        <ExportCard siteId={site.id} />
+        <DetailsCard
+          site={site}
+          visits30d={activity.visits30d}
+          status={
+            <SiteStatus
+              lastSeen={activity.lastSeen}
+              installed={Boolean(site.installed_at)}
             />
-            <ExportCard siteId={site.id} />
-            <DetailsCard site={site} visits30d={activity.visits30d} />
-          </div>
-          <div className="flex min-w-0 flex-col gap-6">
-            <PreviewCard domain={site.domain} />
-            <RemoveCard id={site.id} domain={site.domain} />
-          </div>
-        </div>
-      </LiveFrame>
-    </DashboardShell>
+          }
+        />
+      </div>
+      <div className="flex min-w-0 flex-col gap-6">
+        <PreviewCard domain={site.domain} />
+        <RemoveCard id={site.id} domain={site.domain} />
+      </div>
+    </div>
   )
 }

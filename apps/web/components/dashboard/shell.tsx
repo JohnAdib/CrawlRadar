@@ -1,11 +1,9 @@
 "use client"
 
 import { usePathname, useRouter } from "next/navigation"
-import { createContext, useContext, useState, useTransition } from "react"
+import { createContext, useContext, useTransition } from "react"
 
 import type { FilterChange } from "@/components/dashboard/filters"
-import { SiteSwitcher } from "@/components/dashboard/site-switcher"
-import { DashboardSkeleton } from "@/components/dashboard/skeleton"
 import { type Filters, toQuery } from "@/lib/filters"
 
 type Current = Filters & { site: string }
@@ -24,10 +22,7 @@ export function useDashboardNav() {
   return nav
 }
 
-/**
- * Wraps the live dashboard (or its install state). Filter changes keep the current
- * view dimmed while loading; switching sites shows the full skeleton instead.
- */
+/** Filter state for one live view. Changes keep the current view dimmed while loading. */
 export function DashboardShell({
   filters,
   children,
@@ -38,10 +33,8 @@ export function DashboardShell({
   const router = useRouter()
   const pathname = usePathname()
   const [pending, startTransition] = useTransition()
-  const [switching, setSwitching] = useState(false)
 
   function navigate(change: FilterChange) {
-    setSwitching(Boolean(change.site && change.site !== filters.site))
     startTransition(() =>
       router.push(`${pathname}${toQuery({ ...filters, ...change })}`, {
         scroll: false,
@@ -51,18 +44,7 @@ export function DashboardShell({
 
   return (
     <Nav.Provider value={{ filters, pending, navigate }}>
-      {pending && switching ? <DashboardSkeleton /> : children}
+      {children}
     </Nav.Provider>
   )
-}
-
-/** Site picker bound to the dashboard URL. */
-export function DashboardSiteSwitcher({
-  sites,
-}: {
-  sites: { id: string; domain: string }[]
-}) {
-  const { filters, navigate } = useDashboardNav()
-  if (sites.length < 2) return null
-  return <SiteSwitcher value={filters.site} sites={sites} onChange={navigate} />
 }
