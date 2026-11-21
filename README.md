@@ -25,7 +25,7 @@ Traditional analytics tools hide bot traffic, but AI platforms now read the web 
 
 ## Features
 
-- **Tiny tracking snippet**: a few hundred bytes, async, no dependencies. A `<noscript>` pixel also counts crawlers that never run JavaScript.
+- **One-line install**: a single async `<script>` tag served from your own CrawlRadar domain. The tracker itself is about 400 bytes.
 - **Bot detection and classification**: A curated list of known AI crawlers, grouped by platform (OpenAI, Anthropic, Google, Perplexity, Meta, Apple...) and type (training, search, assistant). Unknown self-declared bots are flagged as `Unknown`.
 - **AI referrals**: humans who click through from ChatGPT, Perplexity, Claude, Gemini, Copilot and others.
 - **Dashboard**: 24h / 7d / 30d ranges, platform and bot-type filters, activity timeline, platform breakdown, top pages, bot list, and recent activity log.
@@ -36,14 +36,15 @@ Traditional analytics tools hide bot traffic, but AI platforms now read the web 
 
 ```mermaid
 flowchart LR
-  S["Your website<br/>(snippet)"] -- "GET /track?sid=..." --> F["Supabase Edge Function<br/>track"]
+  S["Your website<br/>&lt;script src=/t.js&gt;"] -- "GET /api/collect?sid=..." --> C["Next.js app<br/>/api/collect"]
+  C -- "forwards UA + IP" --> F["Supabase Edge Function<br/>track"]
   F -- "classify UA + referrer<br/>insert (service role)" --> DB[("Supabase Postgres<br/>sites, crawler_events")]
   D["Next.js dashboard"] -- "supabase-js + RLS<br/>crawler_stats() RPC" --> DB
   U["You"] --> D
 ```
 
-1. The snippet requests `functions/v1/track` with the site ID, page URL and referrer. Crawlers that skip JavaScript load the `<noscript>` image instead.
-2. The `track` function reads the **User-Agent from the request header** (so a page can't fake it), classifies it, and stores only AI crawler hits and AI referrals. Ordinary human visits are dropped.
+1. The site loads `/t.js` from your CrawlRadar domain. It sends the page URL and referrer to `/api/collect` on the same domain, so your customers never see a Supabase URL.
+2. `/api/collect` forwards the request, including the visitor's User-Agent and IP, to the `track` Edge Function. The function reads the **User-Agent from the request header** (so a page can't fake it), classifies it, and stores only AI crawler hits and AI referrals. Ordinary human visits are dropped.
 3. The dashboard reads Postgres directly through supabase-js. RLS scopes every query to the signed-in user, and a single `crawler_stats()` SQL function returns all chart data in one round trip. There's no separate API server to run.
 
 ## Quick start
@@ -158,23 +159,28 @@ Local URLs for Option B:
 
 ## Install the snippet on your site
 
-Add a site on **Sites & install** and copy the two generated snippets:
+On **Sites**, click **Add website**, then copy the one tag it gives you into the `<head>` of every page:
 
-<img alt="Sites and install page" src="docs/images/install.png" width="800">
+<img alt="Sites page" src="docs/images/install.png" width="800">
 
 ```html
-<!-- 1. In <head> -->
-<script>
-(function(d,s){var g=d.createElement("script");g.async=1;
-g.src="https://<project>.supabase.co/functions/v1/track?sid="+s+"&u="+encodeURIComponent(location.href)+"&r="+encodeURIComponent(d.referrer);
-d.head.appendChild(g)})(document,"<site-id>");
-</script>
-
-<!-- 2. Right after <body>: counts crawlers that don't run JavaScript -->
-<noscript><img src="https://<project>.supabase.co/functions/v1/track?sid=<site-id>&t=img" alt="" width="1" height="1" style="position:absolute;left:-9999px"></noscript>
+<script async src="https://<your-crawlradar>/t.js?s=<site-id>"></script>
 ```
 
-The site card shows **"Last hit ..."** as soon as the first event lands.
+The site card shows **"Last hit ..."** as soon as the first event lands, and the dashboard switches from its "Listening" state to charts on its own.
+
+<details>
+<summary>Optional: count crawlers that don't run JavaScript</summary>
+
+Most AI crawlers fetch HTML without running scripts. If you can add a second tag, put this right after `<body>`:
+
+```html
+<noscript><img src="https://<your-crawlradar>/api/collect?sid=<site-id>&t=img" alt="" width="1" height="1" style="position:absolute;left:-9999px"></noscript>
+```
+
+Browsers send only your domain as the referrer for this image, so these hits are recorded without a page path when the crawler sends no `Referer`. Server-side tracking, which sees every request, is on the roadmap.
+
+</details>
 
 ## Deploy
 
@@ -207,9 +213,12 @@ The service-role key lives only inside the Edge Function. The dashboard never ne
 
 ```
 apps/web/                 Next.js 16 dashboard (App Router, Server Components, Server Actions)
-  app/(app)/              signed-in pages: dashboard, sites & install
+  app/page.tsx            public home page
+  app/(app)/              signed-in pages: /dashboard, /sites, /export (CSV)
+  app/api/collect/        public collection endpoint, forwards to the track function
   app/login/              sign in / sign up
-  app/export/route.ts     CSV export
+  public/t.js             the tracker customers embed
+  components/animations/  Lottie animations (radar, success)
   proxy.ts                session refresh + auth gate
 packages/ui/              @crawlradar/ui: shadcn/ui design system (components, charts, theme)
 packages/eslint-config/   shared lint config
@@ -230,8 +239,10 @@ Add one line to `BOT_PATTERNS` in [`supabase/functions/_shared/bots.ts`](supabas
 
 | Decision | Why | Considered instead |
 | --- | --- | --- |
-| Snippet's own GET request is the beacon | One request, no CORS preflight, and the server reads the real User-Agent header | `fetch`/`sendBeacon` POST with a JS-reported UA, which is spoofable and needs an extra request |
-| `<noscript>` pixel fallback | Most AI crawlers don't execute JavaScript, so a JS-only tracker misses them | JS only (misses most crawlers); server log ingestion (planned) |
+| One `<script src>` tag on your own domain | Shortest possible install, cacheable static tracker, and customers only see your domain | Inline loader snippet pointing at `*.supabase.co` (longer, leaks the backend URL) |
+| `/api/collect` forwards to the Edge Function | Ingest logic stays in one place (the PRD's Edge Function), and the dashboard needs no service-role key | Inserting from a Next.js route (needs the secret key in the web host); a Vercel rewrite (less control over forwarded headers) |
+| User-Agent read on the server, beacon via a GET pixel | No CORS preflight, and the UA comes from the request header, so it can't be faked by page script | `fetch`/`sendBeacon` POST with a JS-reported UA |
+| `<noscript>` pixel is optional, not default | Keeps the install to one line; the PRD accepts the JS limitation and plans server-side tracking for v2 | Two tags by default (more coverage, more setup) |
 | Store only AI hits and referrals | Keeps the free tier small and avoids storing personal browsing data | Store everything and filter at query time |
 | Daily-salted SHA-256 IP hash | Lets you group visits within a day without storing an IP or tracking across days | Raw IP; a static hash (reversible by brute force over IPv4) |
 | No custom API: supabase-js + RLS + one SQL RPC | Less code to run and secure; authorisation is enforced in the database | Express/Hono API layer; client-side aggregation (breaks past 1,000 rows) |
