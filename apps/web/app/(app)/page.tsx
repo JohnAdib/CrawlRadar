@@ -30,6 +30,7 @@ import {
   BOT_TYPES,
   type BotType,
   parseFilters,
+  type Range,
   RANGES,
   sinceFor,
 } from "@/lib/filters"
@@ -40,6 +41,7 @@ import { createClient } from "@/lib/supabase/server"
 interface Stats {
   platforms: string[]
   total: number
+  totals: Record<Range, number>
   active_bots: number
   by_platform: { platform: string; visits: number }[]
   by_bot: {
@@ -132,6 +134,9 @@ export default async function DashboardPage({
               icon={Activity}
               label="Total visits"
               value={formatNumber(stats.total)}
+              hint={(Object.keys(RANGES) as Range[])
+                .map((r) => `${r} ${formatNumber(stats.totals[r])}`)
+                .join(" · ")}
             />
             <StatCard
               icon={Bot}
