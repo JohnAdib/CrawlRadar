@@ -44,27 +44,93 @@ flowchart LR
 2. The `track` function reads the **User-Agent from the request header** (so a page can't fake it), classifies it, and stores only AI crawler hits and AI referrals. Ordinary human visits are dropped.
 3. The dashboard reads Postgres directly through supabase-js. RLS scopes every query to the signed-in user, and a single `crawler_stats()` SQL function returns all chart data in one round trip. There's no separate API server to run.
 
-## Quick start (local, about 5 minutes)
+## Quick start
 
-**Prerequisites:** [Node.js 24+](https://nodejs.org), [pnpm](https://pnpm.io) and [Docker](https://www.docker.com/) (for the local Supabase stack).
+**You need:** [Node.js 24+](https://nodejs.org) and pnpm. If you don't have pnpm, run `corepack enable` once.
+
+The dashboard is plain Node.js. The only other piece is a Supabase backend (Postgres, Auth and the tracking function). Pick one of these:
+
+| | Option A: Supabase Cloud | Option B: fully local |
+| --- | --- | --- |
+| Needs | Free [supabase.com](https://supabase.com) account | [Docker](https://www.docker.com/) |
+| Demo data | No (send test hits instead) | Yes, 30 days preloaded |
+| Best for | Trying it quickly, or deploying | Offline development |
+
+First, get the code:
 
 ```bash
 git clone https://github.com/JohnAdib/CrawlRadar.git
 cd CrawlRadar
 pnpm install
-
-pnpm db:start                                  # local Supabase: Postgres, Auth, Edge Functions, Studio
-cp apps/web/.env.example apps/web/.env.local   # local defaults already filled in
-pnpm dev                                       # http://localhost:3000
 ```
 
-Sign in with the seeded demo account: **`demo@crawlradar.dev` / `crawlradar-demo`**. It comes with 30 days of sample data.
+### Option A: Supabase Cloud (no Docker)
 
-To see live data arrive, create your own account, add a site, and send simulated crawler hits:
+1. Create a free project at [supabase.com/dashboard/new](https://supabase.com/dashboard/new).
 
-```bash
-pnpm simulate <site-id>      # site ID is shown on the "Sites & install" page
-```
+2. Log in and link the project:
+
+   ```bash
+   pnpm exec supabase login
+   pnpm exec supabase link --project-ref <your-project-ref>
+   ```
+
+3. Create the tables and deploy the tracking function:
+
+   ```bash
+   pnpm exec supabase db push
+   pnpm exec supabase functions deploy track --no-verify-jwt
+   ```
+
+4. Copy the env file:
+
+   ```bash
+   cp apps/web/.env.example apps/web/.env.local
+   ```
+
+   Then set the two values in `apps/web/.env.local` from **Project Settings > API**: the project URL and the publishable key.
+
+5. Start the dashboard:
+
+   ```bash
+   pnpm dev
+   ```
+
+6. Open http://localhost:3000, create an account, and add a site. Then send test crawler hits to it:
+
+   ```bash
+   pnpm simulate <site-id> 40 https://<your-project-ref>.supabase.co/functions/v1/track
+   ```
+
+### Option B: fully local (Docker)
+
+1. Start the local Supabase stack. It runs Postgres, Auth, the tracking function and Studio, and loads the demo data.
+
+   ```bash
+   pnpm db:start
+   ```
+
+2. Copy the env file. The local values are already filled in.
+
+   ```bash
+   cp apps/web/.env.example apps/web/.env.local
+   ```
+
+3. Start the dashboard:
+
+   ```bash
+   pnpm dev
+   ```
+
+4. Open http://localhost:3000 and sign in as **`demo@crawlradar.dev`** / **`crawlradar-demo`**.
+
+   To watch new data arrive, add your own site and run:
+
+   ```bash
+   pnpm simulate <site-id>
+   ```
+
+Local URLs for Option B:
 
 | URL | What |
 | --- | --- |
@@ -112,17 +178,15 @@ The site card shows **"Last hit ..."** as soon as the first event lands.
 
 ### 1. Supabase (database, auth, tracking function)
 
-Create a free project at [supabase.com](https://supabase.com), then:
+1. Do steps 1 to 3 of [Option A](#option-a-supabase-cloud-no-docker). The demo seed is never pushed to a hosted project.
 
-```bash
-pnpm exec supabase login
-pnpm exec supabase link --project-ref <your-project-ref>
-pnpm exec supabase db push                                  # apply migrations (the demo seed is local-only)
-pnpm exec supabase functions deploy track --no-verify-jwt   # public endpoint: crawlers have no JWT
-pnpm exec supabase secrets set IP_HASH_SALT="$(openssl rand -hex 32)"
-```
+2. Optionally, set your own salt for IP hashing. Without one, the function uses the service role key as the salt.
 
-In **Authentication > URL Configuration**, set the Site URL to your dashboard's URL.
+   ```bash
+   pnpm exec supabase secrets set IP_HASH_SALT="$(openssl rand -hex 32)"
+   ```
+
+3. In **Authentication > URL Configuration**, set the Site URL to your dashboard's URL.
 
 ### 2. Dashboard (Vercel or any Node host)
 

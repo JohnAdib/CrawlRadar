@@ -4,7 +4,7 @@ Thanks for helping. Bug reports, new bot signatures and pull requests are all we
 
 ## Setup
 
-Follow the [local quick start](README.md#quick-start-local-about-5-minutes): `pnpm install`, `pnpm db:start`, copy the env file, `pnpm dev`.
+Follow the [quick start](README.md#quick-start). Either Supabase Cloud or the local Docker stack works.
 
 ## Before opening a pull request
 
