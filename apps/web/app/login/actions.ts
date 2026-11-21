@@ -19,7 +19,7 @@ export async function signIn(form: FormData) {
   const supabase = await createClient()
   const { error } = await supabase.auth.signInWithPassword(credentials(form))
   if (error) fail(error.message)
-  redirect("/")
+  redirect("/dashboard")
 }
 
 export async function signUp(form: FormData) {

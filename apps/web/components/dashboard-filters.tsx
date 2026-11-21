@@ -8,54 +8,47 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@crawlradar/ui/components/select"
+import { Spinner } from "@crawlradar/ui/components/spinner"
 import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@crawlradar/ui/components/toggle-group"
-import { Download } from "lucide-react"
+import { X } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTransition } from "react"
 
 import { BOT_TYPES, type Filters, RANGES, toQuery } from "@/lib/filters"
 
 const ALL = "all"
+type Current = Filters & { site: string }
+
+function useFilterNavigation(filters: Current) {
+  const router = useRouter()
+  const [pending, startTransition] = useTransition()
+  const update = (change: Partial<Filters>) =>
+    startTransition(() =>
+      router.push(`/dashboard${toQuery({ ...filters, ...change })}`, {
+        scroll: false,
+      })
+    )
+  return { pending, update }
+}
 
 export function DashboardFilters({
   filters,
-  sites,
   platforms,
 }: {
-  filters: Filters & { site: string }
-  sites: { id: string; domain: string }[]
+  filters: Current
   platforms: string[]
 }) {
-  const router = useRouter()
-  const [pending, startTransition] = useTransition()
-
-  function update(change: Partial<Filters>) {
-    startTransition(() => router.push(`/${toQuery({ ...filters, ...change })}`))
-  }
+  const { pending, update } = useFilterNavigation(filters)
+  const filtered = Boolean(filters.platform || filters.type)
 
   return (
     <div
-      className="flex flex-wrap items-center gap-2 data-[pending=true]:opacity-60"
+      className="grid grid-cols-2 items-center gap-2 sm:flex sm:flex-wrap"
       data-pending={pending}
     >
-      {sites.length > 1 && (
-        <Select value={filters.site} onValueChange={(site) => update({ site })}>
-          <SelectTrigger aria-label="Site" className="w-48 bg-background">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {sites.map((s) => (
-              <SelectItem key={s.id} value={s.id}>
-                {s.domain}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
-
       <ToggleGroup
         type="single"
         variant="outline"
@@ -64,11 +57,16 @@ export function DashboardFilters({
           range && update({ range: range as Filters["range"] })
         }
         aria-label="Date range"
-        className="bg-background"
+        className="col-span-2 w-full bg-background sm:w-auto"
       >
-        {Object.keys(RANGES).map((r) => (
-          <ToggleGroupItem key={r} value={r} className="px-3">
-            {r}
+        {Object.entries(RANGES).map(([value, { label }]) => (
+          <ToggleGroupItem
+            key={value}
+            value={value}
+            className="flex-1 px-4"
+            aria-label={`Last ${label}`}
+          >
+            {value}
           </ToggleGroupItem>
         ))}
       </ToggleGroup>
@@ -77,7 +75,10 @@ export function DashboardFilters({
         value={filters.platform ?? ALL}
         onValueChange={(v) => update({ platform: v === ALL ? undefined : v })}
       >
-        <SelectTrigger aria-label="Platform" className="w-40 bg-background">
+        <SelectTrigger
+          aria-label="Platform"
+          className="w-full bg-background sm:w-44"
+        >
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -96,7 +97,10 @@ export function DashboardFilters({
           update({ type: v === ALL ? undefined : (v as Filters["type"]) })
         }
       >
-        <SelectTrigger aria-label="Bot type" className="w-40 bg-background">
+        <SelectTrigger
+          aria-label="Bot type"
+          className="w-full bg-background sm:w-44"
+        >
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -109,11 +113,48 @@ export function DashboardFilters({
         </SelectContent>
       </Select>
 
-      <Button variant="outline" className="ml-auto bg-background" asChild>
-        <a href={`/export${toQuery(filters)}`} download>
-          <Download /> Export CSV
-        </a>
-      </Button>
+      {filtered && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="col-span-2 justify-self-start sm:col-span-1"
+          onClick={() => update({ platform: undefined, type: undefined })}
+        >
+          <X /> Clear filters
+        </Button>
+      )}
+      {pending && (
+        <Spinner className="text-muted-foreground" aria-label="Updating" />
+      )}
     </div>
+  )
+}
+
+export function SiteSwitcher({
+  filters,
+  sites,
+}: {
+  filters: Current
+  sites: { id: string; domain: string }[]
+}) {
+  const { update } = useFilterNavigation(filters)
+  return (
+    <Select
+      value={filters.site}
+      onValueChange={(site) =>
+        update({ site, platform: undefined, type: undefined })
+      }
+    >
+      <SelectTrigger aria-label="Site" className="w-full bg-background sm:w-52">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {sites.map((s) => (
+          <SelectItem key={s.id} value={s.id}>
+            {s.domain}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   )
 }

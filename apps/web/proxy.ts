@@ -1,7 +1,8 @@
 import { createServerClient } from "@supabase/ssr"
 import { type NextRequest, NextResponse } from "next/server"
 
-// Refreshes the Supabase session cookie on every request and gates the app behind sign-in.
+// Refreshes the Supabase session cookie and gates the signed-in app.
+// The home page, /t.js and /api/collect stay public (see `matcher`).
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request })
 
@@ -23,17 +24,18 @@ export async function proxy(request: NextRequest) {
 
   const { data } = await supabase.auth.getClaims()
   const signedIn = Boolean(data?.claims)
-  const onLogin = request.nextUrl.pathname.startsWith("/login")
+  const path = request.nextUrl.pathname
 
-  if (!signedIn && !onLogin)
-    return NextResponse.redirect(new URL("/login", request.url))
-  if (signedIn && onLogin)
-    return NextResponse.redirect(new URL("/", request.url))
+  if (path === "/") return response
+  if (path.startsWith("/login")) {
+    return signedIn
+      ? NextResponse.redirect(new URL("/dashboard", request.url))
+      : response
+  }
+  if (!signedIn) return NextResponse.redirect(new URL("/login", request.url))
   return response
 }
 
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
-  ],
+  matcher: ["/", "/login", "/dashboard/:path*", "/sites/:path*", "/export"],
 }

@@ -12,6 +12,9 @@ import { Field, FieldGroup, FieldLabel } from "@crawlradar/ui/components/field"
 import { Input } from "@crawlradar/ui/components/input"
 import { CircleAlert } from "lucide-react"
 
+import Link from "next/link"
+
+import { LoginButtons } from "@/components/login-buttons"
 import { Logo } from "@/components/logo"
 import { SUPABASE_URL } from "@/lib/supabase/server"
 import { signIn, signUp } from "./actions"
@@ -27,7 +30,9 @@ export default async function LoginPage({
 
   return (
     <main className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted/40 p-6">
-      <Logo className="text-xl" />
+      <Link href="/" aria-label="CrawlRadar home">
+        <Logo className="text-xl" />
+      </Link>
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>Welcome</CardTitle>
@@ -70,12 +75,7 @@ export default async function LoginPage({
             </FieldGroup>
           </CardContent>
           <CardFooter className="mt-6 flex flex-col gap-2">
-            <Button formAction={signIn} className="w-full">
-              Sign in
-            </Button>
-            <Button formAction={signUp} variant="outline" className="w-full">
-              Create account
-            </Button>
+            <LoginButtons signIn={signIn} signUp={signUp} />
           </CardFooter>
         </form>
       </Card>

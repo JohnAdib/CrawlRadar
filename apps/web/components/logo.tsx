@@ -1,7 +1,13 @@
 import { cn } from "@crawlradar/ui/lib/utils"
 import { Radar } from "lucide-react"
 
-export function Logo({ className }: { className?: string }) {
+export function Logo({
+  className,
+  compactOnMobile,
+}: {
+  className?: string
+  compactOnMobile?: boolean
+}) {
   return (
     <span
       className={cn(
@@ -12,7 +18,9 @@ export function Logo({ className }: { className?: string }) {
       <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
         <Radar className="size-4" />
       </span>
-      CrawlRadar
+      <span className={cn(compactOnMobile && "hidden sm:inline")}>
+        CrawlRadar
+      </span>
     </span>
   )
 }

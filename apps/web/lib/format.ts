@@ -15,3 +15,6 @@ export function timeAgo(iso: string): string {
 }
 
 export const formatNumber = (n: number) => new Intl.NumberFormat("en").format(n)
+
+export const visits = (n: number) =>
+  `${formatNumber(n)} visit${n === 1 ? "" : "s"}`

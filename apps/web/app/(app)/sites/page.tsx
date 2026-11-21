@@ -1,5 +1,4 @@
 import { Badge } from "@crawlradar/ui/components/badge"
-import { Button } from "@crawlradar/ui/components/button"
 import {
   Card,
   CardAction,
@@ -10,27 +9,32 @@ import {
 } from "@crawlradar/ui/components/card"
 import {
   Empty,
+  EmptyContent,
   EmptyDescription,
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
 } from "@crawlradar/ui/components/empty"
-import { Download, Globe, LayoutDashboard, Trash2 } from "lucide-react"
-import Link from "next/link"
+import { Globe } from "lucide-react"
+import type { Metadata } from "next"
 
-import { AddSiteForm } from "@/components/add-site-form"
+import { AddSiteDialog } from "@/components/add-site-dialog"
+import { Animation } from "@/components/animation"
 import { CopyBlock } from "@/components/copy-block"
+import { PageHeader } from "@/components/page-header"
+import { SiteMenu } from "@/components/site-menu"
 import { timeAgo } from "@/lib/format"
-import { bodySnippet, headSnippet } from "@/lib/snippet"
+import { appOrigin, snippet } from "@/lib/snippet"
 import { createClient } from "@/lib/supabase/server"
-import { deleteSite } from "./actions"
+
+export const metadata: Metadata = { title: "Sites · CrawlRadar" }
 
 export default async function SitesPage() {
   const supabase = await createClient()
-  const { data: sites } = await supabase
-    .from("sites")
-    .select("id, domain, created_at")
-    .order("created_at")
+  const [{ data: sites }, origin] = await Promise.all([
+    supabase.from("sites").select("id, domain, created_at").order("created_at"),
+    appOrigin(),
+  ])
 
   const lastSeen = await Promise.all(
     (sites ?? []).map(async (site) => {
@@ -45,93 +49,69 @@ export default async function SitesPage() {
     })
   )
 
+  if (!sites?.length) {
+    return (
+      <Empty className="min-h-[70svh]">
+        <EmptyHeader>
+          <EmptyMedia>
+            <Animation name="radar" className="size-36" />
+          </EmptyMedia>
+          <EmptyTitle className="text-xl">Add your first website</EmptyTitle>
+          <EmptyDescription>
+            CrawlRadar shows which AI crawlers, like GPTBot, ClaudeBot and
+            PerplexityBot, read your site. Setup takes one line of HTML.
+          </EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
+          <AddSiteDialog origin={origin} size="lg" />
+        </EmptyContent>
+      </Empty>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Sites &amp; install
-        </h1>
-        <p className="text-muted-foreground">
-          Add a domain, paste two snippets into your site, and crawler visits
-          start showing up.
-        </p>
+      <PageHeader
+        title="Sites"
+        description="Paste a site's snippet into the <head> of every page. That's the whole install."
+        action={<AddSiteDialog origin={origin} />}
+      />
+
+      <div className="grid gap-4">
+        {sites.map((site, i) => (
+          <Card key={site.id}>
+            <CardHeader>
+              <CardTitle className="flex min-w-0 flex-wrap items-center gap-2">
+                <Globe className="size-4 shrink-0 text-muted-foreground" />
+                <span className="truncate">{site.domain}</span>
+                {lastSeen[i] ? (
+                  <Badge variant="secondary" className="gap-1.5">
+                    <span className="size-1.5 rounded-full bg-green-500" />
+                    Last hit {timeAgo(lastSeen[i])}
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="gap-1.5">
+                    <span className="size-1.5 animate-pulse rounded-full bg-amber-500" />
+                    Waiting for first hit
+                  </Badge>
+                )}
+              </CardTitle>
+              <CardDescription>
+                Added{" "}
+                {new Date(site.created_at).toLocaleDateString("en", {
+                  dateStyle: "medium",
+                })}
+              </CardDescription>
+              <CardAction>
+                <SiteMenu id={site.id} domain={site.domain} />
+              </CardAction>
+            </CardHeader>
+            <CardContent>
+              <CopyBlock code={snippet(origin, site.id)} label="Snippet" />
+            </CardContent>
+          </Card>
+        ))}
       </div>
-
-      <AddSiteForm />
-
-      {!sites?.length && (
-        <Empty className="border border-dashed bg-background">
-          <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <Globe />
-            </EmptyMedia>
-            <EmptyTitle>No sites yet</EmptyTitle>
-            <EmptyDescription>
-              Add your first domain above to get a tracking snippet.
-            </EmptyDescription>
-          </EmptyHeader>
-        </Empty>
-      )}
-
-      {sites?.map((site, i) => (
-        <Card key={site.id}>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Globe className="size-4 text-muted-foreground" />
-              {site.domain}
-              {lastSeen[i] ? (
-                <Badge variant="secondary">
-                  Last hit {timeAgo(lastSeen[i])}
-                </Badge>
-              ) : (
-                <Badge variant="outline">Waiting for first hit</Badge>
-              )}
-            </CardTitle>
-            <CardDescription>
-              Site ID <code className="font-mono">{site.id}</code>
-            </CardDescription>
-            <CardAction className="flex gap-1">
-              <Button variant="outline" size="sm" asChild>
-                <Link href={`/?site=${site.id}`}>
-                  <LayoutDashboard /> Dashboard
-                </Link>
-              </Button>
-              <Button variant="outline" size="sm" asChild>
-                <a href={`/export?site=${site.id}`} download>
-                  <Download /> Export all (CSV)
-                </a>
-              </Button>
-              <form action={deleteSite}>
-                <input type="hidden" name="id" value={site.id} />
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label={`Delete ${site.domain}`}
-                >
-                  <Trash2 />
-                </Button>
-              </form>
-            </CardAction>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <p className="text-sm font-medium">
-                1. Paste into <code>&lt;head&gt;</code>
-              </p>
-              <CopyBlock code={headSnippet(site.id)} label="Head snippet" />
-            </div>
-            <div className="flex flex-col gap-2">
-              <p className="text-sm font-medium">
-                2. Paste right after <code>&lt;body&gt;</code>{" "}
-                <span className="font-normal text-muted-foreground">
-                  (counts crawlers that don&apos;t run JavaScript)
-                </span>
-              </p>
-              <CopyBlock code={bodySnippet(site.id)} label="Body snippet" />
-            </div>
-          </CardContent>
-        </Card>
-      ))}
     </div>
   )
 }

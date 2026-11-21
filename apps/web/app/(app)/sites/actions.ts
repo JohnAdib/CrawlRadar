@@ -4,7 +4,11 @@ import { revalidatePath } from "next/cache"
 
 import { createClient } from "@/lib/supabase/server"
 
-export type ActionState = { error?: string } | undefined
+export type AddSiteState =
+  // `value` echoes the input back so the field keeps what was typed after an error.
+  | { error: string; value: string; site?: undefined }
+  | { site: { id: string; domain: string }; error?: undefined }
+  | undefined
 
 /** Accepts "example.com", "https://www.example.com/blog" etc. and returns "example.com". */
 function normalizeDomain(input: string): string | null {
@@ -22,28 +26,35 @@ function normalizeDomain(input: string): string | null {
 }
 
 export async function addSite(
-  _prev: ActionState,
+  _prev: AddSiteState,
   form: FormData
-): Promise<ActionState> {
-  const domain = normalizeDomain(String(form.get("domain") ?? ""))
-  if (!domain) return { error: "Enter a valid domain, like example.com" }
+): Promise<AddSiteState> {
+  const value = String(form.get("domain") ?? "")
+  const domain = normalizeDomain(value)
+  if (!domain) return { error: "Enter a valid domain, like example.com", value }
 
   const supabase = await createClient()
-  const { error } = await supabase.from("sites").insert({ domain })
-  if (error)
+  const { data, error } = await supabase
+    .from("sites")
+    .insert({ domain })
+    .select("id, domain")
+    .single()
+  if (error) {
     return {
       error:
         error.code === "23505" ? `${domain} is already added` : error.message,
+      value,
     }
+  }
 
   revalidatePath("/sites")
+  revalidatePath("/dashboard")
+  return { site: data }
 }
 
-export async function deleteSite(form: FormData) {
+export async function deleteSite(id: string) {
   const supabase = await createClient()
-  await supabase
-    .from("sites")
-    .delete()
-    .eq("id", String(form.get("id")))
+  await supabase.from("sites").delete().eq("id", id)
   revalidatePath("/sites")
+  revalidatePath("/dashboard")
 }
