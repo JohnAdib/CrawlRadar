@@ -1,12 +1,11 @@
 "use client"
 
-import * as React from "react"
-import { cva, type VariantProps } from "class-variance-authority"
-import { cn } from "cn"
-
 import { Button } from "@crawlradar/ui/components/button"
 import { Input } from "@crawlradar/ui/components/input"
 import { Textarea } from "@crawlradar/ui/components/textarea"
+import { cva, type VariantProps } from "class-variance-authority"
+import { cn } from "cn"
+import type * as React from "react"
 
 function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
   return (
@@ -150,7 +149,7 @@ export {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
-  InputGroupText,
   InputGroupInput,
+  InputGroupText,
   InputGroupTextarea,
 }

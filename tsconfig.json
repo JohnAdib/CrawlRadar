@@ -1,4 +1,3 @@
 {
   "extends": "@crawlradar/typescript-config/base.json"
 }
-

@@ -5,8 +5,8 @@
   "scripts": {
     "build": "turbo build",
     "dev": "turbo dev",
-    "lint": "turbo lint",
-    "format": "turbo format",
+    "lint": "biome check .",
+    "format": "biome check --write .",
     "typecheck": "turbo typecheck",
     "test": "vitest run",
     "db:start": "supabase start",
@@ -18,12 +18,10 @@
     "test:e2e": "playwright test"
   },
   "devDependencies": {
-    "@crawlradar/eslint-config": "workspace:*",
+    "@biomejs/biome": "2.6.8",
     "@crawlradar/typescript-config": "workspace:*",
     "@playwright/test": "^1.65.1",
     "@vitest/coverage-v8": "^5.1.1",
-    "prettier": "^3.10.1",
-    "prettier-plugin-tailwindcss": "^0.8.1",
     "supabase": "^3.2.0",
     "turbo": "^2.11.11",
     "typescript": "^5",

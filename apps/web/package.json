@@ -7,8 +7,6 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "format": "prettier --write \"**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -26,13 +24,11 @@
     "sonner": "^2.0.8"
   },
   "devDependencies": {
-    "@crawlradar/eslint-config": "workspace:^",
     "@crawlradar/typescript-config": "workspace:*",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "eslint": "^10",
     "typescript": "^5"
   }
 }

@@ -1,11 +1,10 @@
 "use client"
 
-import * as React from "react"
-import { type VariantProps } from "class-variance-authority"
+import { toggleVariants } from "@crawlradar/ui/components/toggle"
+import type { VariantProps } from "class-variance-authority"
 import { cn } from "cn"
 import { ToggleGroup as ToggleGroupPrimitive } from "radix-ui"
-
-import { toggleVariants } from "@crawlradar/ui/components/toggle"
+import * as React from "react"
 
 const ToggleGroupContext = React.createContext<
   VariantProps<typeof toggleVariants> & {

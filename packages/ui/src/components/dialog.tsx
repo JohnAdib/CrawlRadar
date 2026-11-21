@@ -1,11 +1,10 @@
 "use client"
 
-import * as React from "react"
-import { cn } from "cn"
-import { Dialog as DialogPrimitive } from "radix-ui"
-
 import { Button } from "@crawlradar/ui/components/button"
+import { cn } from "cn"
 import { XIcon } from "lucide-react"
+import { Dialog as DialogPrimitive } from "radix-ui"
+import type * as React from "react"
 
 function Dialog({
   ...props

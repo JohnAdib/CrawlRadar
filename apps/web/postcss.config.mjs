@@ -1,1 +1,1 @@
-export { default } from "@crawlradar/ui/postcss.config";
+export { default } from "@crawlradar/ui/postcss.config"
