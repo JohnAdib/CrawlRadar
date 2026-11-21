@@ -21,7 +21,7 @@ test("a new user adds a site, installs the snippet and sees AI traffic", async (
   await expect(page.getByText(`${domain} is ready`)).toBeVisible()
   const snippet = (await page
     .getByRole("dialog")
-    .locator("code")
+    .locator("pre code")
     .textContent())!
   expect(snippet).toMatch(
     /^<script async src="http:\/\/localhost:\d+\/t\.js\?s=[0-9a-f-]{36}"><\/script>$/
@@ -68,15 +68,40 @@ test("a new user adds a site, installs the snippet and sees AI traffic", async (
   }).toPass({ timeout: 15_000 })
   await expect(page.getByText("ChatGPT").first()).toBeVisible()
 
-  // The sites page now shows the site as live; removing it asks first.
+  // A second site with no data yet: the switcher must stay available, and switching
+  // shows the install state for that site.
+  const second = `e2e-second-${Date.now()}.test`
+  await page.goto("/sites")
+  await page.getByRole("button", { name: "Add website" }).click()
+  await page.getByLabel("Domain").fill(second)
+  await page.getByRole("button", { name: "Add website" }).last().click()
+  await expect(page.getByText(`${second} is ready`)).toBeVisible()
+  await page.getByRole("button", { name: "Done" }).click()
+
+  await page.goto("/dashboard")
+  await page.getByRole("combobox", { name: "Site" }).click()
+  await page.getByRole("option", { name: second }).click()
+  await expect(page.getByText("Listening for AI crawlers")).toBeVisible()
+  await page.getByRole("combobox", { name: "Site" }).click()
+  await page.getByRole("option", { name: domain }).click()
+  await expect(page.getByText("GPTBot").first()).toBeVisible()
+
+  // The sites list shows both; a site's own page holds install and removal.
   await page.goto("/sites")
   await expect(page.getByText(/Last hit/)).toBeVisible()
-  await page.getByRole("button", { name: `${domain} options` }).click()
-  await page.getByRole("menuitem", { name: "Remove site" }).click()
+  await expect(page.getByText("Waiting for first hit")).toBeVisible()
+  await page.getByRole("link", { name: new RegExp(domain) }).click()
+  await expect(page.getByRole("heading", { name: domain })).toBeVisible()
+  await expect(page.getByText(`t.js?s=${siteId}`)).toBeVisible()
+  await page.getByRole("button", { name: "Remove site" }).click()
   await expect(page.getByText(`Remove ${domain}?`)).toBeVisible()
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "Remove site" })
     .click()
-  await expect(page.getByText("Add your first website")).toBeVisible()
+  await expect(page).toHaveURL(/\/sites$/)
+  await expect(
+    page.getByRole("link", { name: new RegExp(domain) })
+  ).toHaveCount(0)
+  await expect(page.getByText(second)).toBeVisible()
 })

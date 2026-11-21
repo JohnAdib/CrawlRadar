@@ -36,9 +36,10 @@ test("the demo dashboard on the home page is interactive", async ({ page }) => {
   await demo.getByRole("button", { name: "Clear filters" }).click()
   await expect(demo.getByText("GPTBot").first()).toBeVisible()
 
-  const download = page.waitForEvent("download")
+  // Example data can't be exported; the button explains how to get real data.
   await demo.getByRole("button", { name: /CSV/ }).click()
-  expect((await download).suggestedFilename()).toBe("crawlradar-demo-30d.csv")
+  await expect(page.getByText("This is example data")).toBeVisible()
+  await expect(page.getByRole("button", { name: "Get started" })).toBeVisible()
 })
 
 test("signed-out visitors are sent to sign in", async ({ page }) => {
