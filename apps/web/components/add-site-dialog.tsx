@@ -9,21 +9,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@crawlradar/ui/components/dialog"
-import { Field, FieldError, FieldLabel } from "@crawlradar/ui/components/field"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-  InputGroupText,
-} from "@crawlradar/ui/components/input-group"
-import { Spinner } from "@crawlradar/ui/components/spinner"
 import { Plus } from "lucide-react"
-import { createContext, useActionState, useContext, useState } from "react"
+import { createContext, useContext, useState } from "react"
 
-import { type AddSiteState, addSite } from "@/app/(app)/sites/actions"
 import { Animation } from "@/components/animation"
 import { CopyBlock } from "@/components/copy-block"
+import { type AddedSite, DomainForm } from "@/components/domain-form"
 import { Tag } from "@/components/head-tag"
+import { snippet } from "@/lib/snippet"
 
 const OpenAddSite = createContext<() => void>(() => {})
 
@@ -85,24 +78,21 @@ function AddSiteForm({
   origin: string
   onDone: () => void
 }) {
-  const [state, action, pending] = useActionState<AddSiteState, FormData>(
-    addSite,
-    undefined
-  )
+  const [site, setSite] = useState<AddedSite | null>(null)
 
-  if (state?.site) {
+  if (site) {
     return (
       <div className="flex flex-col items-center gap-4 text-center">
         <Animation name="success" className="size-24" />
         <DialogHeader className="items-center">
-          <DialogTitle>{state.site.domain} is ready</DialogTitle>
+          <DialogTitle>{site.domain} is ready</DialogTitle>
           <DialogDescription>
             Paste this tag into the <Tag /> of every page. Visits show up on the
             dashboard within seconds.
           </DialogDescription>
         </DialogHeader>
         <CopyBlock
-          code={`<script async src="${origin}/t.js?s=${state.site.id}"></script>`}
+          code={snippet(origin, site.id)}
           label="Snippet"
           className="w-full text-left"
         />
@@ -116,7 +106,7 @@ function AddSiteForm({
   }
 
   return (
-    <form action={action} className="flex flex-col gap-6">
+    <DomainForm onAdded={setSite}>
       <DialogHeader>
         <DialogTitle>Add a website</DialogTitle>
         <DialogDescription>
@@ -124,35 +114,6 @@ function AddSiteForm({
           separate sites.
         </DialogDescription>
       </DialogHeader>
-      <Field data-invalid={Boolean(state?.error)}>
-        <FieldLabel htmlFor="domain">Domain</FieldLabel>
-        <InputGroup>
-          <InputGroupAddon>
-            <InputGroupText>https://</InputGroupText>
-          </InputGroupAddon>
-          <InputGroupInput
-            id="domain"
-            name="domain"
-            placeholder="example.com"
-            autoComplete="off"
-            autoCapitalize="none"
-            spellCheck={false}
-            inputMode="url"
-            aria-invalid={Boolean(state?.error)}
-            defaultValue={state?.value}
-            key={state?.value}
-            autoFocus
-            required
-          />
-        </InputGroup>
-        {state?.error && <FieldError>{state.error}</FieldError>}
-      </Field>
-      <DialogFooter>
-        <Button type="submit" disabled={pending} className="w-full sm:w-auto">
-          {pending ? <Spinner /> : <Plus />}
-          {pending ? "Adding..." : "Add website"}
-        </Button>
-      </DialogFooter>
-    </form>
+    </DomainForm>
   )
 }

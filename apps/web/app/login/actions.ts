@@ -38,9 +38,8 @@ export async function signUp(form: FormData) {
   // Projects with email confirmation on return no session until the link is clicked.
   if (!data.session)
     fail("Check your inbox to confirm your email, then sign in.", form)
-  // New accounts start by adding a site, unless they followed a link somewhere.
-  const next = nextOf(form)
-  redirect(next && next !== "/dashboard" ? safeNext(next) : "/sites")
+  // New accounts start with onboarding; the app stays locked until it is done.
+  redirect("/onboarding")
 }
 
 export async function signOut() {
