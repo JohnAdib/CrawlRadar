@@ -27,7 +27,7 @@ Regular analytics tools filter bots out. But AI platforms now read the web aroun
 
 ## Features
 
-- **One-line install.** A single async `<script>` tag served from your own CrawlRadar domain. The tracker is about 400 bytes and never blocks the page. An optional `<noscript>` pixel also counts crawlers that don't run JavaScript.
+- **One-line install, two ways.** An async `<script>` tag (about 400 bytes, never blocks the page) or a plain pixel for sites and crawlers without JavaScript. Paste it just before `</body>`, or in the `<head>`.
 - **Guided onboarding.** Five locked steps (account, website, install, verify, explore) with a progress tracker and install tips for WordPress, Shopify, Webflow and frameworks. The dashboard unlocks once the snippet is seen working.
 - **Every AI crawler, classified.** 60+ AI bots grouped by platform and purpose (training, search, assistant), cross-checked with the community [ai.robots.txt](https://github.com/ai-robots-txt/ai.robots.txt) list. That includes Chinese AI platforms: DeepSeek, Qwen and Tongyi (Alibaba), Kimi (Moonshot AI), Doubao (Bytedance), ERNIE (Baidu), Hunyuan (Tencent) and ChatGLM (Zhipu AI). Any other bot is caught by [isbot](https://github.com/omrilotan/isbot) and flagged `Unknown`, named from its user agent.
 - **Search engines alongside.** Googlebot, Bingbot, Baiduspider, YandexBot and others are recorded as their own type, and kept out of the AI totals.
@@ -153,40 +153,46 @@ Local URLs:
 
 ## Install the tracker on your site
 
-Sign up and onboarding walks you through it: add your domain, paste the one tag it gives you into the `<head>` of every page, and open your site once. The dashboard unlocks as soon as the snippet reports in. Add more sites later from **Sites**; each one's snippet, CSV export and removal live in the dashboard's **Settings** view.
+Sign up and onboarding walks you through it: add your domain, add one tag to every page, and open your site once. The dashboard unlocks as soon as the tag reports in. Add more sites later from **Sites**; each one's tags, CSV export and removal live in the dashboard's **Settings** view.
+
+There are two ways to install. Both send the same hit, so pick one.
+
+**JavaScript (recommended).** Paste it just before `</body>`, or in the `<head>`, of every page:
 
 ```html
 <script async src="https://<your-crawlradar>/t.js?s=<site-id>"></script>
 ```
 
+**Pixel (no JavaScript).** Paste it just before `</body>` of every page:
+
+```html
+<img
+  src="https://<your-crawlradar>/api/collect?t=img&sid=<site-id>"
+  alt=""
+  width="1"
+  height="1"
+  style="position:absolute"
+  referrerpolicy="no-referrer-when-downgrade"
+/>
+```
+
+|                                                    | JavaScript | Pixel                   |
+| -------------------------------------------------- | ---------- | ----------------------- |
+| Counts crawlers that run JavaScript                | Yes        | Yes                     |
+| Counts crawlers that skip JavaScript               | No         | Yes                     |
+| Exact page URL                                     | Yes        | From the Referer header |
+| Counts people sent by ChatGPT and other assistants | Yes        | No                      |
+
+The PRD calls for a "tracking pixel (JS SDK)". The JavaScript tag is exactly that: about 400 bytes that send the visit as a 1×1 image request. The plain pixel is the same request without the script. To use both, wrap the pixel in `<noscript>` so visits aren't counted twice.
+
+**Head or before `</body>`?** Either works, and `async` means the script never blocks rendering. Before `</body>` keeps the head clean; the head starts a little earlier. Both placements, and the pixel on its own, are covered by an end-to-end test that loads a real page as GPTBot and checks the visit arrives.
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/install-dark.png">
-  <img alt="Settings: the one-line snippet, the no-JavaScript pixel, CSV export, details and removal" src="docs/images/install-light.png" width="720">
+  <img alt="Settings: the JavaScript tag and the pixel, what each records, CSV export, details and removal" src="docs/images/install-light.png" width="720">
 </picture>
 
 The site shows **"Last hit ..."** with a live dot as soon as the first event lands. Until then the dashboard listens with a live empty state, then switches to charts on its own.
-
-<details>
-<summary>Optional: count crawlers that don't run JavaScript</summary>
-
-Some crawlers fetch images but never run scripts. Settings has a **Pixel only** tab with a second tag for them:
-
-```html
-<noscript
-  ><img
-    src="https://<your-crawlradar>/api/collect?t=img&sid=<site-id>"
-    alt=""
-    width="1"
-    height="1"
-    referrerpolicy="no-referrer-when-downgrade"
-/></noscript>
-```
-
-Without a script, the page comes from the Referer header, which the `referrerpolicy` asks the browser to send in full. Server-side tracking, which sees every request, is on the roadmap.
-
-**Head or footer?** Both work, and `async` means neither blocks rendering. The `<head>` is better: it starts earlier, so it also catches crawlers that leave before the page finishes loading.
-
-</details>
 
 ## Security and privacy
 
@@ -199,13 +205,13 @@ Without a script, the page comes from the Referer header, which the `referrerpol
 
 ## Testing
 
-| Suite                     | Command                     | What it covers                                                                                                                                                                                                                              |
-| ------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Lint and format           | `pnpm lint` / `pnpm format` | Biome formatting, import order and lint rules, cognitive complexity of at most 10 per function, functions of at most 120 lines, and no hand-written source file over 200 lines                                                              |
-| Unit (Vitest)             | `pnpm test`                 | Bot, search-engine and referrer classifier (every listed bot), stats engine, pages and platform tables, CSV writer, install check, filters, demo data, collect endpoint                                                                     |
-| Coverage                  | `pnpm test:coverage`        | 100% of statements, branches, functions and lines in that code. CI fails below 100%                                                                                                                                                         |
-| End-to-end (Playwright)   | `pnpm test:e2e`             | Onboarding (locked app, five steps, resume), every dashboard view, filters, reports, pagination, CSV export, site switching and removal, account isolation, snippet spoofing, the home page and its demo, social previews and phone layouts |
-| Database security (pgTAP) | `pnpm db:test`              | Row-level security between accounts: two users with the same domain, cross-account reads, writes, renames, deletes and anonymous access                                                                                                     |
+| Suite                     | Command                     | What it covers                                                                                                                                                                                                                                                                                    |
+| ------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lint and format           | `pnpm lint` / `pnpm format` | Biome formatting, import order and lint rules, cognitive complexity of at most 10 per function, functions of at most 120 lines, and no hand-written source file over 200 lines                                                                                                                    |
+| Unit (Vitest)             | `pnpm test`                 | Bot, search-engine and referrer classifier (every listed bot), stats engine, pages and platform tables, CSV writer, install check, filters, demo data, collect endpoint                                                                                                                           |
+| Coverage                  | `pnpm test:coverage`        | 100% of statements, branches, functions and lines in that code. CI fails below 100%                                                                                                                                                                                                               |
+| End-to-end (Playwright)   | `pnpm test:e2e`             | Onboarding (locked app, five steps, resume), every dashboard view, filters, reports, the endless activity log, both install methods, the theme switch, CSV export, site switching and removal, account isolation, snippet spoofing, the home page and its demo, social previews and phone layouts |
+| Database security (pgTAP) | `pnpm db:test`              | Row-level security between accounts: two users with the same domain, cross-account reads, writes, renames, deletes and anonymous access                                                                                                                                                           |
 
 End-to-end tests run against a production build and the local Supabase stack. Run `pnpm db:start` first.
 

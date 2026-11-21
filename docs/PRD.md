@@ -177,7 +177,7 @@ Tests: **unit** = Vitest (100% coverage of the logic), **e2e** = Playwright, **d
 | FR-3.3 | Overview (top 10) and Pages view (all)                                    |                                                                                                                                                                                      |
 | FR-3.4 | [`traffic-chart.tsx`](../apps/web/components/dashboard/traffic-chart.tsx) | Hourly for 24h, daily otherwise; split by platform or by type                                                                                                                        |
 | FR-3.5 | [`filters.tsx`](../apps/web/components/dashboard/filters.tsx)             | Range, platform and type, kept in the URL; also page and platform reports                                                                                                            |
-| FR-3.6 | Overview (latest 10) and **Activity log** view                            | The log is paginated (50 per page), filterable, and shows user agent and referrer                                                                                                    |
+| FR-3.6 | Overview (latest 10) and **Activity log** view                            | The log loads as you scroll (batches of 50), is filterable, and shows user agent and referrer                                                                                        |
 | FR-4.1 | [`/export`](<../apps/web/app/(app)/export/route.ts>)                      | Written with [PapaParse](https://www.papaparse.com/); pages past the 1,000-row API limit; neutralises spreadsheet formulas                                                           |
 
 ### Views (7.1) and install flow (7.2)
@@ -190,7 +190,7 @@ Tests: **unit** = Vitest (100% coverage of the logic), **e2e** = Playwright, **d
 | Activity log                         | `/dashboard/activity`  |
 | Settings (snippet, CSV export, site) | `/dashboard/settings`  |
 
-The install flow is the onboarding at `/onboarding`: sign up, add a domain, copy the generated snippet (with the site ID), paste it into the `<head>`, then the first visit to the site unlocks the dashboard. The check also looks for the tag in the site's HTML.
+The install flow is the onboarding at `/onboarding`: sign up, add a domain, copy the generated tag (with the site ID), paste it just before `</body>` or in the `<head>`, then the first visit to the site unlocks the dashboard. The check also looks for the tag in the site's HTML. The views appear once the first visit is recorded.
 
 ### Acceptance criteria
 
@@ -210,15 +210,16 @@ The install flow is the onboarding at `/onboarding`: sign up, add a domain, copy
 
 ### Risks
 
-| Risk                        | What was done                                                                                                                              |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Bots may not run JavaScript | An optional `<noscript>` pixel counts crawlers that fetch images; the README documents the rest and server-side tracking is on the roadmap |
-| Signatures change           | Partial, case-insensitive matching, a list checked against ai.robots.txt, and isbot for anything new                                       |
-| High volume                 | Only bot and referral hits are stored; indexes on `(site_id, timestamp)`; the upgrade path is in the README                                |
+| Risk                        | What was done                                                                                                                                                                                  |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Bots may not run JavaScript | Two install methods: the JavaScript tag, or a plain pixel that also counts crawlers which fetch images but skip scripts. The README documents the rest; server-side tracking is on the roadmap |
+| Signatures change           | Partial, case-insensitive matching, a list checked against ai.robots.txt, and isbot for anything new                                                                                           |
+| High volume                 | Only bot and referral hits are stored; indexes on `(site_id, timestamp)`; the upgrade path is in the README                                                                                    |
 
 ### Deliberate differences
 
-- **The beacon is a GET image request, not a POST.** It needs no CORS preflight and works the same for the `<noscript>` pixel.
+- **The beacon is a GET image request, not a POST.** The JavaScript tag (the PRD's "tracking pixel (JS SDK)") sends the visit as a 1×1 image request, and a plain `<img>` pixel sends the same request without JavaScript. Both are offered side by side, with what each one records. No CORS preflight is needed.
+- **The activity log scrolls endlessly** (keyset batches of 50, loaded before you reach the end) instead of pages.
 - **AI referrals were added.** People arriving from ChatGPT, Perplexity, Claude, Gemini, DeepSeek, Kimi, Qwen and others are tracked as their own type, `referral`.
 - **Search engines were added.** Googlebot, Bingbot, Baiduspider, YandexBot and others are stored as `search_engine`, shown alongside, and kept out of the "AI crawler" totals.
 - **The schema was hardened:** `timestamptz`, `not null` and check constraints, cascading deletes, a `referrer` column, `sites.installed_at` for onboarding, and insert, delete and column-limited update policies.
