@@ -12,7 +12,11 @@ const CRAWLERS: [string, string][] = [
   ["Bytespider", "Bytedance"],
   ["ChatGPT-User", "OpenAI"],
   ["Amazonbot", "Amazon"],
-  ["DeepSeek", "DeepSeek"],
+  ["DeepSeekBot", "DeepSeek"],
+  ["QwenBot", "Alibaba"],
+  ["DoubaoBot", "Bytedance"],
+  ["Kimi-User", "Moonshot AI"],
+  ["GrokBot", "xAI"],
   ["MistralAI-User", "Mistral"],
   ["CCBot", "Common Crawl"],
 ]
