@@ -10,6 +10,8 @@ See which AI bots (GPTBot, ClaudeBot, PerplexityBot and more) visit your site, w
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
 ![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%7C%20Auth%20%7C%20Edge-3ecf8e)
 
+**[Live app](https://crawlradar.vercel.app)** · [Quick start](#quick-start) · [Deploy](#deploy)
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/dashboard-dark.png">
   <img alt="CrawlRadar dashboard" src="docs/images/dashboard-light.png">
