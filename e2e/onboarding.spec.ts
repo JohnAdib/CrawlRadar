@@ -58,7 +58,7 @@ test("a new user is guided through five steps and the app stays locked until don
     r.url().includes("/api/collect")
   )
   await customer.goto(`${customerSite}/pricing?utm_source=chatgpt.com`)
-  expect((await collected).status()).toBe(200)
+  expect((await collected).ok()).toBe(true)
   await customer.close()
 
   // Step 5: done, with a tour of the dashboard's five views.

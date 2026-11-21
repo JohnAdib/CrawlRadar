@@ -16,7 +16,6 @@ import { DEMO_DOMAIN } from "@/lib/demo-data"
 import { type Cursor, LOG_PAGE_SIZE } from "@/lib/events"
 import { type Filters, RANGES } from "@/lib/filters"
 import { visits } from "@/lib/format"
-import { pixel, snippet } from "@/lib/snippet"
 import {
   type CrawlerEvent,
   computePages,
@@ -109,8 +108,8 @@ export function DemoView(props: DemoViewProps) {
       <div className="grid gap-6 lg:grid-cols-2">
         <InstallCard
           domain={DEMO_DOMAIN}
-          code={snippet(props.origin, "YOUR_SITE_ID")}
-          pixel={pixel(props.origin, "YOUR_SITE_ID")}
+          origin={props.origin}
+          siteId="YOUR_SITE_ID"
         />
         <ExportCard siteId="demo" onExport={props.onExport} />
       </div>

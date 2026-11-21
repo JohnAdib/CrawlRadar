@@ -9,7 +9,6 @@ import { StepInstall } from "@/components/onboarding/step-install"
 import { StepVerify } from "@/components/onboarding/step-verify"
 import { Stepper } from "@/components/onboarding/stepper"
 import type { StepId } from "@/components/onboarding/steps"
-import { pixel, snippet } from "@/lib/snippet"
 
 /**
  * Five steps, one at a time: account, website, install, verify, explore. The dashboard
@@ -45,8 +44,8 @@ export function Onboarding({
       ) : step === "install" ? (
         <StepInstall
           domain={site.domain}
-          code={snippet(origin, site.id)}
-          pixel={pixel(origin, site.id)}
+          origin={origin}
+          siteId={site.id}
           onBack={() => setStep("site")}
           onNext={() => setStep("verify")}
         />

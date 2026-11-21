@@ -11,12 +11,12 @@ import { InstallMethods } from "@/components/install/install-methods"
 /** Settings: the two install methods for this site. */
 export function InstallCard({
   domain,
-  code,
-  pixel,
+  origin,
+  siteId,
 }: {
   domain: string
-  code: string
-  pixel: string
+  origin: string
+  siteId: string
 }) {
   return (
     <Card>
@@ -28,7 +28,7 @@ export function InstallCard({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <InstallMethods code={code} pixel={pixel} />
+        <InstallMethods origin={origin} siteId={siteId} />
       </CardContent>
     </Card>
   )

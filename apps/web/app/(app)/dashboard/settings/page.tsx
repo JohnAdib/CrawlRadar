@@ -7,7 +7,6 @@ import { PreviewCard, RemoveCard } from "@/components/site/side-cards"
 import { SiteStatus } from "@/components/site-status"
 import { appOrigin } from "@/lib/origin"
 import { siteActivity } from "@/lib/sites"
-import { pixel, snippet } from "@/lib/snippet"
 
 import { loadDashboard, type SearchParams } from "../data"
 
@@ -31,11 +30,7 @@ export default async function SettingsPage({
   return (
     <div className="fade-in grid animate-in items-start gap-6 duration-300 motion-reduce:animate-none lg:grid-cols-3">
       <div className="flex min-w-0 flex-col gap-6 lg:col-span-2">
-        <InstallCard
-          domain={site.domain}
-          code={snippet(origin, site.id)}
-          pixel={pixel(origin, site.id)}
-        />
+        <InstallCard domain={site.domain} origin={origin} siteId={site.id} />
         <ExportCard siteId={site.id} />
         <DetailsCard
           site={site}

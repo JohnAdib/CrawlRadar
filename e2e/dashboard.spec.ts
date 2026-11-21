@@ -76,8 +76,13 @@ test("exports the current view and all data as CSV", async ({ page }) => {
   )
   const stream = await file.createReadStream()
   const text = await new Response(stream as unknown as ReadableStream).text()
-  expect(text.split("\r\n")[0]).toBe(
-    "timestamp,page_url,bot_name,platform,bot_type,user_agent,page_path,referrer,ip_hash"
+  // Exactly the PRD appendix format.
+  const [header, first] = text.split("\n")
+  expect(header).toBe(
+    "timestamp,page_url,bot_name,platform,bot_type,user_agent"
+  )
+  expect(first).toMatch(
+    /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ,\/[^,]*,[^,]+,[^,]+,[a-z_]+,".*"$/
   )
 })
 

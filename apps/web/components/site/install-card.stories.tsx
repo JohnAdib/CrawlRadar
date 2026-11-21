@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 
 import { InstallCard } from "@/components/site/install-card"
-import { PIXEL, SITE, SNIPPET } from "@/stories/data"
+import { ORIGIN, SITE } from "@/stories/data"
 
 const meta = {
   title: "Site/InstallCard",
@@ -13,7 +13,7 @@ const meta = {
       </div>
     ),
   ],
-  args: { domain: SITE.domain, code: SNIPPET, pixel: PIXEL },
+  args: { domain: SITE.domain, origin: ORIGIN, siteId: SITE.id },
 } satisfies Meta<typeof InstallCard>
 
 export default meta

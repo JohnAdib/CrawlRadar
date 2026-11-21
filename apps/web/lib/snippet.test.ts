@@ -8,7 +8,7 @@ vi.mock("next/headers", () => ({
 }))
 
 const { appOrigin } = await import("./origin")
-const { pixel, snippet } = await import("./snippet")
+const { pixel, pixelWithPage, snippet } = await import("./snippet")
 
 beforeEach(() => headerValues.clear())
 
@@ -41,4 +41,18 @@ test("builds the no-JavaScript pixel", () => {
   expect(tag).toContain('src="https://app.test/api/collect?t=img&sid=abc"')
   expect(tag.startsWith("<img ")).toBe(true)
   expect(tag).toContain('referrerpolicy="no-referrer-when-downgrade"')
+})
+
+test("the template pixel carries the page URL in the image link", () => {
+  const wordpress = pixelWithPage("https://app.test", "abc", "wordpress")
+  expect(wordpress).toContain(
+    "/api/collect?t=img&sid=abc&u=<?php echo rawurlencode("
+  )
+  expect(wordpress).toContain('$_SERVER["REQUEST_URI"]')
+  expect(pixelWithPage("https://app.test", "abc", "shopify")).toContain(
+    "&u={{ canonical_url | url_encode }}"
+  )
+  const any = pixelWithPage("https://app.test", "abc", "any")
+  expect(any).toContain("&u=PAGE_URL")
+  expect(any).not.toContain("referrerpolicy")
 })

@@ -48,6 +48,6 @@ export const SITE = {
   created_at: "2026-09-02T09:14:00Z",
   installed_at: "2026-09-02T09:31:00Z",
 }
-const ORIGIN = "https://crawlradar.vercel.app"
+export const ORIGIN = "https://crawlradar.vercel.app"
 export const SNIPPET = snippet(ORIGIN, SITE.id)
 export const PIXEL = pixel(ORIGIN, SITE.id)

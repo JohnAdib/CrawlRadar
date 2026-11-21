@@ -45,14 +45,14 @@ const PLATFORMS: { name: string; where: React.ReactNode }[] = [
 /** Step 3: copy a tag (JavaScript or pixel), with where-to-paste tips per platform. */
 export function StepInstall({
   domain,
-  code,
-  pixel,
+  origin,
+  siteId,
   onBack,
   onNext,
 }: {
   domain: string
-  code: string
-  pixel: string
+  origin: string
+  siteId: string
   onBack: () => void
   onNext: () => void
 }) {
@@ -71,7 +71,7 @@ export function StepInstall({
         </>
       }
     >
-      <InstallMethods code={code} pixel={pixel} />
+      <InstallMethods origin={origin} siteId={siteId} />
       <dl className="divide-y rounded-lg border text-sm">
         {PLATFORMS.map((p) => (
           <div

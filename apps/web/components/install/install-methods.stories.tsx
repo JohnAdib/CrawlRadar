@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 
 import { InstallMethods } from "@/components/install/install-methods"
-import { PIXEL, SNIPPET } from "@/stories/data"
+import { ORIGIN, SITE } from "@/stories/data"
 
 const meta = {
   title: "Install/InstallMethods",
@@ -13,7 +13,7 @@ const meta = {
       </div>
     ),
   ],
-  args: { code: SNIPPET, pixel: PIXEL },
+  args: { origin: ORIGIN, siteId: SITE.id },
 } satisfies Meta<typeof InstallMethods>
 
 export default meta

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/nextjs-vite"
 import { fn } from "storybook/test"
 
 import { StepInstall } from "@/components/onboarding/step-install"
-import { PIXEL, SITE, SNIPPET } from "@/stories/data"
+import { ORIGIN, SITE } from "@/stories/data"
 
 const meta = {
   title: "Onboarding/StepInstall",
@@ -16,8 +16,8 @@ const meta = {
   ],
   args: {
     domain: SITE.domain,
-    code: SNIPPET,
-    pixel: PIXEL,
+    origin: ORIGIN,
+    siteId: SITE.id,
     onBack: fn(),
     onNext: fn(),
   },
