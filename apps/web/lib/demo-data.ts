@@ -115,6 +115,22 @@ export const DEMO_VISITORS: Visitor[] = [
     weight: 4,
   },
   {
+    bot_name: "Applebot-Extended",
+    platform: "Apple",
+    bot_type: "training",
+    user_agent:
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15 (Applebot-Extended/0.1; +http://www.apple.com/go/applebot)",
+    weight: 4,
+  },
+  {
+    bot_name: "MistralAI-User",
+    platform: "Mistral",
+    bot_type: "assistant",
+    user_agent:
+      "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; MistralAI-User/1.0; +https://docs.mistral.ai/robots)",
+    weight: 3,
+  },
+  {
     bot_name: "Unknown",
     platform: "Unknown",
     bot_type: "unknown",
@@ -153,14 +169,6 @@ export const DEMO_VISITORS: Visitor[] = [
     user_agent: BROWSER,
     referrer: "https://gemini.google.com/",
     weight: 2,
-  },
-  {
-    bot_name: "Copilot",
-    platform: "Microsoft",
-    bot_type: "referral",
-    user_agent: BROWSER,
-    referrer: "https://copilot.microsoft.com/",
-    weight: 1,
   },
 ]
 

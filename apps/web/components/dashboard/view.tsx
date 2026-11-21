@@ -41,13 +41,14 @@ import {
   Platforms,
   Referrers,
   TopPages,
+  TypeBreakdown,
 } from "@/components/dashboard/panels"
 import { StatCard } from "@/components/dashboard/stat-card"
 import { type Filters, RANGES } from "@/lib/filters"
-import { formatNumber } from "@/lib/format"
 import type { Stats } from "@/lib/stats"
 
 const LIST_LIMIT = 10
+const compact = new Intl.NumberFormat("en", { notation: "compact" }).format
 
 export interface DashboardViewProps {
   stats: Stats
@@ -92,7 +93,7 @@ function Panel({
         <CardTitle>{title}</CardTitle>
         {description && <CardDescription>{description}</CardDescription>}
       </CardHeader>
-      <CardContent>{children}</CardContent>
+      <CardContent className="flex flex-1 flex-col">{children}</CardContent>
     </Card>
   )
 }
@@ -177,6 +178,13 @@ export function DashboardView({
   const period = hourly ? "hour" : "day"
   const report = Boolean(filters.page || filters.platform)
   const root = useRef<HTMLDivElement>(null)
+  const bucketLabel = (bucket: string) =>
+    new Date(bucket).toLocaleString(
+      "en",
+      hourly
+        ? { month: "short", day: "numeric", hour: "numeric" }
+        : { weekday: "short", month: "short", day: "numeric" }
+    )
 
   function open(change: FilterChange) {
     onChange(change)
@@ -222,9 +230,11 @@ export function DashboardView({
 
       <div
         className={cn(
-          "flex flex-col gap-4 transition-[opacity,filter] duration-300 sm:gap-6",
-          "group-has-[[data-pending=true]]/dash:opacity-60 group-has-[[data-pending=true]]/dash:saturate-50",
-          "group-has-[[data-pending=true]]/dash:[&_[data-slot=card]]:animate-pulse"
+          // While new data loads the whole view settles back as one piece (with the
+          // progress bar above). No per-card animation: it would restart each card's
+          // entrance animation and ripple across the page.
+          "flex flex-col gap-4 transition-[opacity,filter] duration-300 ease-out sm:gap-6",
+          "group-has-[[data-pending=true]]/dash:pointer-events-none group-has-[[data-pending=true]]/dash:opacity-55 group-has-[[data-pending=true]]/dash:blur-[1px]"
         )}
       >
         {report && (
@@ -292,8 +302,12 @@ export function DashboardView({
                       current: stats.crawls,
                       previous: stats.prev_crawls,
                     }}
-                    hint={`24h ${formatNumber(stats.totals["24h"])} · 7d ${formatNumber(stats.totals["7d"])} · 30d ${formatNumber(stats.totals["30d"])}`}
-                    spark={stats.timeline.map((p) => p.visits - p.referral)}
+                    hint={`24h ${compact(stats.totals["24h"])} · 7d ${compact(stats.totals["7d"])} · 30d ${compact(stats.totals["30d"])}`}
+                    spark={stats.timeline.map((p) => ({
+                      label: bucketLabel(p.bucket),
+                      value: p.visits - p.referral,
+                    }))}
+                    unit="crawls"
                   />
                   <StatCard
                     index={1}
@@ -304,8 +318,12 @@ export function DashboardView({
                       current: stats.referrals,
                       previous: stats.prev_referrals,
                     }}
-                    hint="People sent by AI assistants"
-                    spark={stats.timeline.map((p) => p.referral)}
+                    hint="Visitors from AI assistants"
+                    spark={stats.timeline.map((p) => ({
+                      label: bucketLabel(p.bucket),
+                      value: p.referral,
+                    }))}
+                    unit="referrals"
                     color="var(--chart-4)"
                   />
                   <StatCard
@@ -374,10 +392,16 @@ export function DashboardView({
                       : "Click a platform for its report"
                   }
                 >
-                  <Platforms
-                    platforms={stats.by_platform}
-                    onSelect={filters.platform ? undefined : openPlatform}
-                  />
+                  <div className="flex flex-1 flex-col gap-4">
+                    <Platforms
+                      platforms={stats.by_platform}
+                      onSelect={filters.platform ? undefined : openPlatform}
+                    />
+                    {/* Pinned to the bottom so the panel ends level with the left column. */}
+                    <div className="mt-auto">
+                      <TypeBreakdown timeline={stats.timeline} />
+                    </div>
+                  </div>
                 </Panel>
               </div>
             </div>

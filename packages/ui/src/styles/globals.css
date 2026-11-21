@@ -126,6 +126,23 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* An app, not a document: text is selectable only where copying is the point. */
+  body {
+    @apply select-none;
+  }
+  input,
+  textarea,
+  [contenteditable="true"],
+  code,
+  pre,
+  kbd,
+  .select-text {
+    @apply select-text;
+  }
+  img,
+  svg {
+    -webkit-user-drag: none;
+  }
 }
 /* Every interactive control shows a pointer; disabled ones don't. */
 @layer base {

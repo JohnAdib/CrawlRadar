@@ -6,8 +6,8 @@ on:
   pull_request:
 
 jobs:
-  check:
-    name: Lint, types, unit tests, build
+  lint:
+    name: Lint and format (Biome)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,6 +18,18 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
+
+  check:
+    name: Types, unit tests, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - name: Unit tests (100% coverage required)
         run: pnpm test:coverage

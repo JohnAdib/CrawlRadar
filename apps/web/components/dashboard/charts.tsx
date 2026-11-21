@@ -13,7 +13,7 @@ import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { BOT_TYPES, type BotType } from "@/lib/filters"
 import type { TimelinePoint } from "@/lib/stats"
 
-const TYPE_COLORS: Record<BotType, string> = {
+export const TYPE_COLORS: Record<BotType, string> = {
   training: "var(--chart-1)",
   search: "var(--chart-2)",
   assistant: "var(--chart-3)",

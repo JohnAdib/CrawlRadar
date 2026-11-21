@@ -18,6 +18,7 @@ import { cn } from "@crawlradar/ui/lib/utils"
 import { ChevronRight } from "lucide-react"
 
 import { BrandLogo } from "@/components/brand-logo"
+import { TYPE_COLORS } from "@/components/dashboard/charts"
 import { BOT_TYPES, type BotType } from "@/lib/filters"
 import { formatNumber, timeAgo, visits } from "@/lib/format"
 import { platformColor } from "@/lib/platforms"
@@ -138,6 +139,58 @@ export function Platforms({
   )
 }
 
+/** Share of visits per bot type: what the platforms above came to do. */
+export function TypeBreakdown({ timeline }: { timeline: Stats["timeline"] }) {
+  const types = (Object.keys(BOT_TYPES) as BotType[])
+    .map((type) => ({
+      type,
+      visits: timeline.reduce((sum, p) => sum + p[type], 0),
+    }))
+    .filter((t) => t.visits > 0)
+  const total = types.reduce((sum, t) => sum + t.visits, 0)
+  if (total === 0) return null
+  const share = (v: number) => Math.round((v / total) * 100)
+  return (
+    <div className="flex flex-col gap-2.5 border-t pt-4">
+      <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+        By type of visit
+      </p>
+      <div
+        className="flex h-2.5 w-full gap-0.5 overflow-hidden rounded-full"
+        role="img"
+        aria-label={types
+          .map((t) => `${BOT_TYPES[t.type]} ${share(t.visits)}%`)
+          .join(", ")}
+      >
+        {types.map((t) => (
+          <span
+            key={t.type}
+            className="h-full transition-[width] duration-700"
+            style={{
+              width: `${(t.visits / total) * 100}%`,
+              backgroundColor: TYPE_COLORS[t.type],
+            }}
+          />
+        ))}
+      </div>
+      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+        {types.map((t) => (
+          <li key={t.type} className="flex items-center gap-1.5">
+            <span
+              className="size-2 shrink-0 rounded-full"
+              style={{ backgroundColor: TYPE_COLORS[t.type] }}
+            />
+            {BOT_TYPES[t.type]}
+            <span className="text-muted-foreground tabular-nums">
+              {share(t.visits)}%
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 export function TopPages({
   pages,
   onSelect,
@@ -170,7 +223,8 @@ export function Referrers({ referrers }: { referrers: Stats["referrers"] }) {
   const total = referrers.reduce((sum, r) => sum + r.visits, 0)
   const share = (visits: number) => Math.round((visits / total) * 100)
   return (
-    <div className="flex flex-col gap-4">
+    // Grows with the panel: the tiles stretch to keep both dashboard columns level.
+    <div className="flex flex-1 flex-col gap-4">
       {/* Share of AI referrals per assistant, in each brand's colour. */}
       <div
         className="flex h-2.5 w-full gap-0.5 overflow-hidden rounded-full"
@@ -190,11 +244,11 @@ export function Referrers({ referrers }: { referrers: Stats["referrers"] }) {
           />
         ))}
       </div>
-      <ul className="grid grid-cols-[repeat(auto-fit,minmax(9.5rem,1fr))] gap-3">
+      <ul className="grid flex-1 auto-rows-fr grid-cols-[repeat(auto-fit,minmax(9.5rem,1fr))] gap-3">
         {referrers.map((r) => (
           <li
             key={r.source}
-            className="flex flex-col gap-2 rounded-lg border bg-muted/30 p-3 transition-colors hover:bg-muted/70"
+            className="flex flex-col justify-between gap-2 rounded-lg border bg-muted/30 p-3 transition-colors hover:bg-muted/70"
           >
             <span className="flex items-center gap-2 font-medium text-sm">
               <BrandLogo name={r.source} /> {r.source}

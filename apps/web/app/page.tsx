@@ -10,7 +10,6 @@ import {
   TrendingUp,
 } from "lucide-react"
 import Link from "next/link"
-
 import { Animation } from "@/components/animation"
 import { DemoDashboard } from "@/components/dashboard/demo"
 import { GitHubIcon } from "@/components/github-icon"
@@ -29,6 +28,7 @@ import { Logo } from "@/components/logo"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { appOrigin, snippet } from "@/lib/snippet"
 import { createClient } from "@/lib/supabase/server"
+import { version } from "../package.json"
 
 const REPO = "https://github.com/JohnAdib/CrawlRadar"
 
@@ -340,6 +340,13 @@ export default async function HomePage() {
               className="underline-offset-4 hover:text-foreground hover:underline"
             >
               GitHub
+            </a>{" "}
+            ·{" "}
+            <a
+              href={`${REPO}/releases/tag/v${version}`}
+              className="tabular-nums underline-offset-4 hover:text-foreground hover:underline"
+            >
+              v{version}
             </a>
           </p>
         </div>

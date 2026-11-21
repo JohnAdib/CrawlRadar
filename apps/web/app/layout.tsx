@@ -61,6 +61,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      prefix="og: https://ogp.me/ns#"
       suppressHydrationWarning
       className={cn(
         "antialiased",

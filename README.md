@@ -46,6 +46,7 @@ Regular analytics tools filter bots out. But AI platforms now read the web aroun
 ## How it works
 
 ```mermaid
+%%{init: {"flowchart": {"diagramPadding": 40, "padding": 16}}}%%
 flowchart LR
   S["Your website<br/>&lt;script src=/t.js&gt;"] -- "GET /api/collect" --> C["Next.js<br/>/api/collect"]
   C -- "forwards UA + IP" --> F["Supabase Edge Function<br/>track"]
