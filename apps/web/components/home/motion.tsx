@@ -1,9 +1,11 @@
 "use client"
 
 import { cn } from "@crawlradar/ui/lib/utils"
-import { motion, useReducedMotion } from "motion/react"
+import { motion } from "motion/react"
 import { useEffect, useRef } from "react"
 
+// Reduced motion is honoured app-wide by <MotionConfig reducedMotion="user"> (theme
+// provider). Branching here on the preference would render differently on the server.
 const EASE = [0.22, 1, 0.36, 1] as const
 
 /** Fades, lifts and un-blurs its children once they scroll into view. */
@@ -16,8 +18,6 @@ export function Reveal({
   delay?: number
   className?: string
 }) {
-  const reduce = useReducedMotion()
-  if (reduce) return <div className={className}>{children}</div>
   return (
     <motion.div
       className={className}
@@ -39,7 +39,6 @@ export function HeroTitle({
   text: string
   className?: string
 }) {
-  const reduce = useReducedMotion()
   const words = text.split(" ").map((word, index) => ({ word, index }))
   return (
     <h1 className={className}>
@@ -47,7 +46,7 @@ export function HeroTitle({
         <motion.span
           key={`${i}:${word}`}
           className="inline-block"
-          initial={reduce ? false : { opacity: 0, y: 18, filter: "blur(10px)" }}
+          initial={{ opacity: 0, y: 18, filter: "blur(10px)" }}
           animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
           transition={{ duration: 0.8, delay: 0.1 + i * 0.07, ease: EASE }}
         >
@@ -61,8 +60,6 @@ export function HeroTitle({
 
 /** The demo window: tilts back in 3D, then settles flat as it scrolls into view. */
 export function DemoStage({ children }: { children: React.ReactNode }) {
-  const reduce = useReducedMotion()
-  if (reduce) return <div>{children}</div>
   return (
     <div className="[perspective:1600px]">
       <motion.div

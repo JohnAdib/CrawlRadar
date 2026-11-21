@@ -8,19 +8,14 @@ import {
   TooltipTrigger,
 } from "@crawlradar/ui/components/tooltip"
 import { useTheme } from "next-themes"
-import { useSyncExternalStore } from "react"
-
-const subscribe = () => () => {}
+import { useEffect, useState } from "react"
 
 /** Theme switch with a circular reveal (View Transitions), driven by next-themes. */
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme()
-  // The theme is only known in the browser; render the light icon until then.
-  const mounted = useSyncExternalStore(
-    subscribe,
-    () => true,
-    () => false
-  )
+  // The theme is only known in the browser; render the light icon until mounted.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
   const theme = mounted && resolvedTheme === "dark" ? "dark" : "light"
 
   return (

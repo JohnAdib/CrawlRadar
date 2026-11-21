@@ -150,6 +150,11 @@ function getThemeTransitionClipPaths(
   }
 }
 
+function setRef<T>(ref: React.Ref<T> | undefined, node: T | null) {
+  if (typeof ref === "function") ref(node)
+  else if (ref) ref.current = node
+}
+
 export const AnimatedThemeToggler = ({
   className,
   duration = 400,
@@ -157,14 +162,16 @@ export const AnimatedThemeToggler = ({
   fromCenter = false,
   theme,
   onThemeChange,
+  ref: forwardedRef,
   ...props
-}: AnimatedThemeTogglerProps) => {
+}: AnimatedThemeTogglerProps & { ref?: React.Ref<HTMLButtonElement> }) => {
   const shape = variant ?? "circle"
   const isControlled = theme !== undefined
   const [internalIsDark, setInternalIsDark] = useState(false)
   const isDark = isControlled ? theme === "dark" : internalIsDark
   const buttonRef = useRef<HTMLButtonElement>(null)
   const isTransitioningRef = useRef(false)
+  const transitionRef = useRef<ViewTransition | null>(null)
   const activeAnimRef = useRef<Animation | null>(null)
 
   const cancelAnim = useCallback(() => {
@@ -203,12 +210,9 @@ export const AnimatedThemeToggler = ({
 
   const toggleTheme = useCallback(() => {
     const button = buttonRef.current
-    if (
-      !button ||
-      isTransitioningRef.current ||
-      document.documentElement.dataset.magicuiThemeVt === "active"
-    )
-      return
+    if (!button) return
+    // A click during the reveal finishes it at once, so every click toggles.
+    if (isTransitioningRef.current) transitionRef.current?.skipTransition()
 
     // innerWidth/innerHeight (not visualViewport): percentages must resolve
     // against the snapshot reference box, which includes classic scrollbars.
@@ -231,11 +235,13 @@ export const AnimatedThemeToggler = ({
       Math.max(y, viewportHeight - y)
     )
 
+    // Decide from the page itself, not from props: the theme may have been set before
+    // this component knew it (system preference, another tab, a keyboard shortcut).
+    const newTheme = !document.documentElement.classList.contains("dark")
     const applyTheme = () => {
-      const newTheme = !isDark
-      // Always toggle the class synchronously so the View Transitions API
+      // Set the class synchronously so the View Transitions API
       // snapshots the new theme inside the startViewTransition callback.
-      document.documentElement.classList.toggle("dark")
+      document.documentElement.classList.toggle("dark", newTheme)
       if (isControlled) {
         onThemeChange?.(newTheme ? "dark" : "light")
       } else {
@@ -268,6 +274,8 @@ export const AnimatedThemeToggler = ({
     // theme unclipped between snapshot and the ready.then() JS animation.
     root.style.setProperty("--magicui-theme-vt-clip-from", clipPath[0])
     const cleanup = () => {
+      // A newer reveal (started by a quick second click) owns the state now.
+      if (transitionRef.current !== transition) return
       isTransitioningRef.current = false
       delete root.dataset.magicuiThemeVt
       root.style.removeProperty("--magicui-theme-toggle-vt-duration")
@@ -279,6 +287,7 @@ export const AnimatedThemeToggler = ({
     const transition = document.startViewTransition(() => {
       flushSync(applyTheme)
     })
+    transitionRef.current = transition
     if (typeof transition?.finished?.finally === "function") {
       transition.finished.finally(cleanup).catch(() => {})
     } else {
@@ -305,23 +314,23 @@ export const AnimatedThemeToggler = ({
         })
         .catch(() => {})
     }
-  }, [
-    shape,
-    fromCenter,
-    duration,
-    isDark,
-    isControlled,
-    onThemeChange,
-    cancelAnim,
-  ])
+  }, [shape, fromCenter, duration, isControlled, onThemeChange, cancelAnim])
 
   return (
     <button
       type="button"
-      ref={buttonRef}
-      onClick={toggleTheme}
       className={cn(className)}
       {...props}
+      // Wrappers like TooltipTrigger (a Radix Slot) pass their own ref and onClick:
+      // keep both working alongside this component's own.
+      ref={(node) => {
+        buttonRef.current = node
+        setRef(forwardedRef, node)
+      }}
+      onClick={(event) => {
+        props.onClick?.(event)
+        toggleTheme()
+      }}
     >
       {isDark ? <Sun /> : <Moon />}
       <span className="sr-only">Toggle theme</span>

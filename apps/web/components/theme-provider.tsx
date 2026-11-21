@@ -1,5 +1,6 @@
 "use client"
 
+import { MotionConfig } from "motion/react"
 import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes"
 import * as React from "react"
 
@@ -16,7 +17,8 @@ function ThemeProvider({
       {...props}
     >
       <ThemeHotkey />
-      {children}
+      {/* Honour the OS "reduce motion" setting for every Motion animation. */}
+      <MotionConfig reducedMotion="user">{children}</MotionConfig>
     </NextThemesProvider>
   )
 }
