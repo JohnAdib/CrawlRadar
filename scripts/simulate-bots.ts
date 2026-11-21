@@ -1,18 +1,21 @@
 // Sends realistic AI-crawler hits to the track endpoint so you can see data immediately.
 //
-//   pnpm simulate <site-id> [count] [track-url]
+//   pnpm simulate <site-id> <domain> [count] [track-url]
+//
+// <domain> must be the site's domain: the track function only counts hits from it.
 //
 // Defaults to the local Supabase stack. Runs on Node 24+ (native TypeScript), no dependencies.
 
 const [
   siteId,
+  domain,
   countArg = "40",
   trackUrl = "http://127.0.0.1:54321/functions/v1/track",
 ] = process.argv.slice(2)
 
-if (!siteId) {
+if (!siteId || !domain) {
   console.error(
-    "Usage: pnpm simulate <site-id> [count] [track-url]\nFind the site ID on the Sites & install page."
+    "Usage: pnpm simulate <site-id> <domain> [count] [track-url]\nFind the site ID on the site's page under Sites."
   )
   process.exit(1)
 }
@@ -58,7 +61,7 @@ const count = Number(countArg)
 let sent = 0
 for (let i = 0; i < count; i++) {
   const [userAgent, referrer = ""] = VISITORS[i % VISITORS.length]!
-  const page = `https://example.com${PAGES[i % PAGES.length]}`
+  const page = `https://${domain}${PAGES[i % PAGES.length]}`
   const url = `${trackUrl}?sid=${siteId}&u=${encodeURIComponent(page)}&r=${encodeURIComponent(referrer)}`
   const res = await fetch(url, { headers: { "user-agent": userAgent } })
   if (res.ok) sent++

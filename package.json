@@ -15,7 +15,8 @@
     "simulate": "node scripts/simulate-bots.ts",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "db:test": "supabase test db"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.8",

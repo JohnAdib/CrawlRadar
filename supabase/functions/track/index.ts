@@ -7,6 +7,7 @@
 // script can't fake it. Ordinary human visits are classified as null and not stored.
 import { createClient } from "npm:@supabase/supabase-js@2"
 import { classify } from "../_shared/bots.ts"
+import { belongsToSite } from "../_shared/origin.ts"
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -37,6 +38,21 @@ async function hashIp(ip: string): Promise<string> {
   ).join("")
 }
 
+// Site domains rarely change; cache lookups for a minute per function instance.
+const domains = new Map<string, { domain: string | null; at: number }>()
+async function siteDomain(sid: string): Promise<string | null> {
+  const cached = domains.get(sid)
+  if (cached && Date.now() - cached.at < 60_000) return cached.domain
+  const { data } = await supabase
+    .from("sites")
+    .select("domain")
+    .eq("id", sid)
+    .maybeSingle()
+  const domain = data?.domain ?? null
+  domains.set(sid, { domain, at: Date.now() })
+  return domain
+}
+
 function pathOf(url: string): string | null {
   try {
     return new URL(url).pathname.slice(0, 500)
@@ -62,6 +78,10 @@ async function record(req: Request, url: URL): Promise<void> {
   const hit = classify(userAgent, referrer, pageUrl)
   if (!hit) return
 
+  // Only count hits from the site's own domain, so a copied snippet can't inject data.
+  const domain = await siteDomain(sid)
+  if (!domain || !belongsToSite(pageUrl, domain)) return
+
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? ""
   const { error } = await supabase.from("crawler_events").insert({
     site_id: sid,
@@ -74,14 +94,12 @@ async function record(req: Request, url: URL): Promise<void> {
     referrer,
     ip_hash: ip ? await hashIp(ip) : null,
   })
-  // 23503 = unknown site id (foreign key). Expected for stale snippets; anything else is logged.
-  if (error && error.code !== "23503") console.error("insert failed", error)
+  // Logged, never thrown: tracking must not break the customer's page.
+  if (error) console.error("insert failed", error)
 }
 
 Deno.serve(async (req) => {
   const url = new URL(req.url)
-  // shortcut: any site id is accepted without checking the page's domain matches the site,
-  // so events can be spoofed by someone who knows the id. Add an Origin/domain check if that matters.
   try {
     await record(req, url)
   } catch (err) {
