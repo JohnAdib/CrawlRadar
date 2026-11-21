@@ -1,6 +1,6 @@
-// Run: pnpm test   (uses node:test, also runs under `deno test`)
+// Run: pnpm test
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "vitest";
 import { classify } from "./bots.ts";
 
 const BROWSER =
