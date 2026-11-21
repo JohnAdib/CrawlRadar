@@ -36,9 +36,9 @@ test("builds the one-line snippet", () => {
   )
 })
 
-test("builds the no-JavaScript pixel fallback", () => {
+test("builds the no-JavaScript pixel", () => {
   const tag = pixel("https://app.test", "abc")
   expect(tag).toContain('src="https://app.test/api/collect?t=img&sid=abc"')
-  expect(tag.startsWith("<noscript>")).toBe(true)
+  expect(tag.startsWith("<img ")).toBe(true)
   expect(tag).toContain('referrerpolicy="no-referrer-when-downgrade"')
 })

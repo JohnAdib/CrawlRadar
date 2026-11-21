@@ -15,7 +15,7 @@ import { createContext, useContext, useState } from "react"
 import { Animation } from "@/components/animation"
 import { CopyBlock } from "@/components/copy-block"
 import { type AddedSite, DomainForm } from "@/components/domain-form"
-import { Tag } from "@/components/head-tag"
+import { ScriptPlacement } from "@/components/install/placement"
 import { snippet } from "@/lib/snippet"
 
 const OpenAddSite = createContext<() => void>(() => {})
@@ -87,8 +87,8 @@ function AddSiteForm({
         <DialogHeader className="items-center">
           <DialogTitle>{site.domain} is ready</DialogTitle>
           <DialogDescription>
-            Paste this tag into the <Tag /> of every page. Visits show up on the
-            dashboard within seconds.
+            Paste this tag <ScriptPlacement /> of every page. The pixel (no
+            JavaScript) is in the site&apos;s Settings.
           </DialogDescription>
         </DialogHeader>
         <CopyBlock

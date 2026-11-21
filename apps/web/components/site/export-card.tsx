@@ -17,7 +17,14 @@ const EXPORTS = [
 ] as const
 
 /** CSV downloads of the raw crawler data (FR-4.1, US-5). */
-export function ExportCard({ siteId }: { siteId: string }) {
+export function ExportCard({
+  siteId,
+  onExport,
+}: {
+  siteId: string
+  /** Replaces the downloads (the home page demo explains instead). */
+  onExport?: () => void
+}) {
   return (
     <Card>
       <CardHeader>
@@ -29,13 +36,23 @@ export function ExportCard({ siteId }: { siteId: string }) {
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-wrap gap-2">
-        {EXPORTS.map(({ label, range }) => (
-          <Button key={label} variant={range ? "outline" : "default"} asChild>
-            <a href={`/export${toQuery({ site: siteId, range })}`} download>
+        {EXPORTS.map(({ label, range }) =>
+          onExport ? (
+            <Button
+              key={label}
+              variant={range ? "outline" : "default"}
+              onClick={onExport}
+            >
               <Download /> {label}
-            </a>
-          </Button>
-        ))}
+            </Button>
+          ) : (
+            <Button key={label} variant={range ? "outline" : "default"} asChild>
+              <a href={`/export${toQuery({ site: siteId, range })}`} download>
+                <Download /> {label}
+              </a>
+            </Button>
+          )
+        )}
       </CardContent>
     </Card>
   )

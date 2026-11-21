@@ -2,9 +2,8 @@ import { Badge } from "@crawlradar/ui/components/badge"
 import { Button } from "@crawlradar/ui/components/button"
 import { ArrowRight } from "lucide-react"
 import Link from "next/link"
-
-import { Tag } from "@/components/head-tag"
 import { HeroTitle, Reveal } from "@/components/home/motion"
+import { ScriptPlacement } from "@/components/install/placement"
 import { LiveDot } from "@/components/live-dot"
 
 export type Cta = { href: string; label: string }
@@ -61,7 +60,7 @@ export function Hero({ cta, code }: { cta: Cta; code: string }) {
             {code}
           </code>
           <span className="text-muted-foreground text-xs">
-            The whole install: one line in your <Tag />
+            The whole install: one line, <ScriptPlacement />
           </span>
         </div>
       </Reveal>

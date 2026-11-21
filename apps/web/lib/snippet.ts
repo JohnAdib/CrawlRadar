@@ -6,9 +6,9 @@ export function snippet(origin: string, siteId: string): string {
 }
 
 /**
- * Optional no-JavaScript fallback: a 1x1 image inside <noscript>. Without a script the page
- * URL comes from the Referer header, so the image asks the browser to send it in full.
+ * The no-JavaScript alternative: a 1x1 image. Without a script the page URL comes from the
+ * Referer header, so the image asks the browser to send it in full.
  */
 export function pixel(origin: string, siteId: string): string {
-  return `<noscript><img src="${origin}/api/collect?t=img&sid=${siteId}" alt="" width="1" height="1" referrerpolicy="no-referrer-when-downgrade"></noscript>`
+  return `<img src="${origin}/api/collect?t=img&sid=${siteId}" alt="" width="1" height="1" style="position:absolute" referrerpolicy="no-referrer-when-downgrade">`
 }

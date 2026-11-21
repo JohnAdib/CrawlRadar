@@ -1,60 +1,65 @@
 import { Button } from "@crawlradar/ui/components/button"
 import { ArrowLeft, ArrowRight } from "lucide-react"
 
-import { CopyBlock } from "@/components/copy-block"
 import { Tag } from "@/components/head-tag"
+import { InstallMethods } from "@/components/install/install-methods"
+import { ScriptPlacement } from "@/components/install/placement"
 import { StepCard } from "@/components/onboarding/step-card"
 
-const PLATFORMS = [
+const PLATFORMS: { name: string; where: React.ReactNode }[] = [
   {
     name: "Any HTML site",
     where: (
       <>
-        Paste it inside <Tag /> on every page, or in your shared layout.
+        <ScriptPlacement /> of every page, or once in your shared layout.
       </>
     ),
   },
   {
     name: "WordPress",
-    where:
-      "Use a “header scripts” plugin, or add it to your theme’s header.php.",
+    where: "A “header and footer scripts” plugin (footer box), or footer.php.",
   },
   {
     name: "Shopify",
-    where: "Online Store → Themes → Edit code → theme.liquid, before </head>.",
+    where: (
+      <>
+        Online Store → Themes → Edit code → theme.liquid, just before{" "}
+        <Tag name="/body" />.
+      </>
+    ),
   },
   {
     name: "Webflow / Squarespace / Wix",
-    where: "Site settings → Custom code → Head code.",
+    where: "Site settings → Custom code → Footer code (or Head code).",
   },
   {
     name: "Next.js / React",
-    where: "Add the tag to your root layout’s <head>.",
+    where: (
+      <>
+        Your root layout, just before <Tag name="/body" />.
+      </>
+    ),
   },
 ]
 
-/** Step 3: copy the snippet, with where-to-paste tips for common platforms. */
+/** Step 3: copy a tag (JavaScript or pixel), with where-to-paste tips per platform. */
 export function StepInstall({
   domain,
   code,
+  pixel,
   onBack,
   onNext,
 }: {
   domain: string
   code: string
+  pixel: string
   onBack: () => void
   onNext: () => void
 }) {
   return (
     <StepCard
       title="Install the snippet"
-      description={
-        <>
-          Add this one tag to {domain}. It is a few hundred bytes, loads
-          asynchronously and never slows your pages. Put it in the <Tag />:
-          starting early catches crawlers that leave quickly.
-        </>
-      }
+      description={`Add one tag to every page on ${domain}. The JavaScript tag is recommended; the pixel works without JavaScript.`}
       footer={
         <>
           <Button variant="ghost" onClick={onBack}>
@@ -66,7 +71,7 @@ export function StepInstall({
         </>
       }
     >
-      <CopyBlock code={code} label="Snippet" />
+      <InstallMethods code={code} pixel={pixel} />
       <dl className="divide-y rounded-lg border text-sm">
         {PLATFORMS.map((p) => (
           <div

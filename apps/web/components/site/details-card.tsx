@@ -29,9 +29,11 @@ const date = (iso: string) =>
 export function DetailsCard({
   site,
   visits30d,
+  status,
 }: {
   site: { id: string; created_at: string; installed_at: string | null }
   visits30d: number
+  status?: React.ReactNode
 }) {
   return (
     <Card>
@@ -40,6 +42,7 @@ export function DetailsCard({
       </CardHeader>
       <CardContent>
         <dl className="divide-y">
+          {status && <Row label="Status">{status}</Row>}
           <Row label="Site ID">
             <code className="break-all font-mono text-xs">{site.id}</code>
           </Row>
