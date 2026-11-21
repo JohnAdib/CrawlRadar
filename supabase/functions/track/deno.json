@@ -1,0 +1,5 @@
+{
+  "imports": {
+    "isbot": "npm:isbot@5.2.3"
+  }
+}

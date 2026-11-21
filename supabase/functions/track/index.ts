@@ -38,19 +38,41 @@ async function hashIp(ip: string): Promise<string> {
   ).join("")
 }
 
-// Site domains rarely change; cache lookups for a minute per function instance.
-const domains = new Map<string, { domain: string | null; at: number }>()
-async function siteDomain(sid: string): Promise<string | null> {
-  const cached = domains.get(sid)
-  if (cached && Date.now() - cached.at < 60_000) return cached.domain
+interface Site {
+  domain: string | null
+  installed: boolean
+  at: number
+}
+
+// Sites rarely change; cache lookups for a minute per function instance.
+const sites = new Map<string, Site>()
+async function siteFor(sid: string): Promise<Site> {
+  const cached = sites.get(sid)
+  if (cached && Date.now() - cached.at < 60_000) return cached
   const { data } = await supabase
     .from("sites")
-    .select("domain")
+    .select("domain, installed_at")
     .eq("id", sid)
     .maybeSingle()
-  const domain = data?.domain ?? null
-  domains.set(sid, { domain, at: Date.now() })
-  return domain
+  const site = {
+    domain: data?.domain ?? null,
+    installed: Boolean(data?.installed_at),
+    at: Date.now(),
+  }
+  sites.set(sid, site)
+  return site
+}
+
+// The first hit from the site's own pages (any visitor) proves the snippet is installed.
+// Onboarding waits for this signal.
+async function markInstalled(sid: string, site: Site): Promise<void> {
+  if (site.installed) return
+  site.installed = true
+  await supabase
+    .from("sites")
+    .update({ installed_at: new Date().toISOString() })
+    .eq("id", sid)
+    .is("installed_at", null)
 }
 
 function pathOf(url: string): string | null {
@@ -61,26 +83,36 @@ function pathOf(url: string): string | null {
   }
 }
 
-async function record(req: Request, url: URL): Promise<void> {
+/** The hit's inputs, length-capped, or null when the request is unusable. */
+function readHit(req: Request, url: URL) {
   const sid = url.searchParams.get("sid") ?? ""
-  if (!UUID.test(sid)) return
-
-  const userAgent = (req.headers.get("user-agent") ?? "").slice(0, 1000)
   // Script/img requests carry the embedding page as Referer; `u` is the explicit fallback.
   const pageUrl = (
     url.searchParams.get("u") ||
     req.headers.get("referer") ||
     ""
   ).slice(0, 2000)
-  const referrer = url.searchParams.get("r")?.slice(0, 2000) || null
-  if (!pageUrl) return
+  if (!UUID.test(sid) || !pageUrl) return null
+  return {
+    sid,
+    pageUrl,
+    userAgent: (req.headers.get("user-agent") ?? "").slice(0, 1000),
+    referrer: url.searchParams.get("r")?.slice(0, 2000) || null,
+  }
+}
+
+async function record(req: Request, url: URL): Promise<void> {
+  const input = readHit(req, url)
+  if (!input) return
+  const { sid, pageUrl, userAgent, referrer } = input
+
+  // Only count hits from the site's own domain, so a copied snippet can't inject data.
+  const site = await siteFor(sid)
+  if (!site.domain || !belongsToSite(pageUrl, site.domain)) return
+  await markInstalled(sid, site)
 
   const hit = classify(userAgent, referrer, pageUrl)
   if (!hit) return
-
-  // Only count hits from the site's own domain, so a copied snippet can't inject data.
-  const domain = await siteDomain(sid)
-  if (!domain || !belongsToSite(pageUrl, domain)) return
 
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? ""
   const { error } = await supabase.from("crawler_events").insert({

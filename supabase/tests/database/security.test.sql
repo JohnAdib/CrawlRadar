@@ -2,7 +2,7 @@
 -- Two users both add the same domain; neither can see, change or inject the other's data.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(16);
+select plan(21);
 
 -- Two users, created inside this transaction (rolled back at the end).
 insert into auth.users (id, email, aud, role) values
@@ -59,6 +59,11 @@ select is(
   0,
   'the stats function returns nothing for someone else''s site'
 );
+select is(
+  public.crawler_pages('a1a1a1a1-0000-0000-0000-000000000001', now() - interval '30 days'),
+  '[]'::jsonb,
+  'the pages function returns nothing for someone else''s site'
+);
 
 -- Bob cannot write into or take over Alice's data.
 select throws_ok(
@@ -73,12 +78,27 @@ select throws_ok(
   'bob cannot create a site owned by alice'
 );
 delete from public.sites where id = 'a1a1a1a1-0000-0000-0000-000000000001';
-update public.sites set domain = 'stolen.com' where id = 'a1a1a1a1-0000-0000-0000-000000000001';
+select throws_ok(
+  $$ update public.sites set domain = 'stolen.com' where id = 'a1a1a1a1-0000-0000-0000-000000000001' $$,
+  '42501', null,
+  'bob cannot rename alice''s site'
+);
+update public.sites set installed_at = now() where id = 'a1a1a1a1-0000-0000-0000-000000000001';
 
 -- Alice still has everything.
 select pg_temp.act_as('aaaaaaaa-0000-0000-0000-000000000001');
 select is((select count(*) from public.sites)::int, 1, 'alice still has her site after bob tried to delete it');
 select is((select domain from public.sites), 'test.com', 'alice''s site was not renamed by bob');
+select is((select installed_at from public.sites), null, 'bob cannot mark alice''s site installed');
+select lives_ok(
+  $$ update public.sites set installed_at = now() where id = 'a1a1a1a1-0000-0000-0000-000000000001' $$,
+  'alice can mark her own site installed'
+);
+select throws_ok(
+  $$ update public.sites set domain = 'other.com' where id = 'a1a1a1a1-0000-0000-0000-000000000001' $$,
+  '42501', null,
+  'a site''s domain cannot be changed after it is added'
+);
 select is((select count(*) from public.crawler_events)::int, 5, 'alice sees her 5 events');
 select is(
   (public.crawler_stats('a1a1a1a1-0000-0000-0000-000000000001', now() - interval '30 days', null, null, null)->>'total')::int,

@@ -45,14 +45,14 @@ isOneToOne: false
                   ]
                 },"sites": {
                   Row: {
-                    "created_at": string,"domain": string,"id": string,"user_id": string
+                    "created_at": string,"domain": string,"id": string,"installed_at": string | null,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"domain": string,"id"?: string,"user_id"?: string
+                    "created_at"?: string,"domain": string,"id"?: string,"installed_at"?: string | null,"user_id"?: string
                   }
                   Update: {
-                    "created_at"?: string,"domain"?: string,"id"?: string,"user_id"?: string
+                    "created_at"?: string,"domain"?: string,"id"?: string,"installed_at"?: string | null,"user_id"?: string
                   }
                   Relationships: [
                     
@@ -63,7 +63,10 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            "crawler_stats":
+            "crawler_pages":
+{ Args: { "p_bot_type"?: string,"p_platform"?: string,"p_since": string,"p_site_id": string }; Returns: Json
+                           },
+"crawler_stats":
 { Args: { "p_bot_type"?: string,"p_page_path"?: string,"p_platform"?: string,"p_since": string,"p_site_id": string }; Returns: Json
                            }
           }

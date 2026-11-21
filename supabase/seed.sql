@@ -18,8 +18,8 @@ values (
   '{"sub":"11111111-1111-1111-1111-111111111111","email":"demo@crawlradar.dev"}', 'email', now(), now(), now()
 );
 
-insert into public.sites (id, user_id, domain)
-values ('22222222-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111111', 'crawlradar.vercel.app');
+insert into public.sites (id, user_id, domain, created_at, installed_at)
+values ('22222222-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111111', 'crawlradar.vercel.app', now() - interval '61 days', now() - interval '60 days');
 
 with bots (bot_name, platform, bot_type, user_agent, referrer, w) as (
   values
@@ -34,10 +34,15 @@ with bots (bot_name, platform, bot_type, user_agent, referrer, w) as (
     ('Bytespider', 'Bytedance', 'training', 'Mozilla/5.0 (Linux; Android 5.0) AppleWebKit/537.36 (KHTML, like Gecko) Mobile Safari/537.36 (compatible; Bytespider; spider-feedback@bytedance.com)', null, 7),
     ('CCBot', 'Common Crawl', 'training', 'CCBot/2.0 (https://commoncrawl.org/faq/)', null, 5),
     ('Applebot-Extended', 'Apple', 'training', 'Mozilla/5.0 (compatible; Applebot-Extended/0.1)', null, 3),
-    ('Unknown', 'Unknown', 'unknown', 'Mozilla/5.0 (compatible; SomeNewAIcrawler/0.3; +https://example.com/bot)', null, 4),
+    ('DeepSeekBot', 'DeepSeek', 'training', 'Mozilla/5.0 (compatible; DeepSeekBot/1.0; +https://www.deepseek.com/bot)', null, 3),
+    ('Kimi-User', 'Moonshot AI', 'assistant', 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Kimi-User/1.0)', null, 2),
+    ('Googlebot', 'Google', 'search_engine', 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)', null, 10),
+    ('Bingbot', 'Microsoft', 'search_engine', 'Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)', null, 5),
+    ('SomeNewAIcrawler', 'Unknown', 'unknown', 'Mozilla/5.0 (compatible; SomeNewAIcrawler/0.3; +https://example.com/bot)', null, 4),
     ('ChatGPT', 'OpenAI', 'referral', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0 Safari/537.36', 'https://chatgpt.com/', 8),
     ('Perplexity', 'Perplexity', 'referral', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 15_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/19.0 Safari/605.1.15', 'https://www.perplexity.ai/', 4),
-    ('Claude', 'Anthropic', 'referral', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0 Safari/537.36', 'https://claude.ai/', 3)
+    ('Claude', 'Anthropic', 'referral', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0 Safari/537.36', 'https://claude.ai/', 3),
+    ('Gemini', 'Google', 'referral', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0 Safari/537.36', 'https://gemini.google.com/', 2)
 ),
 pages (page_path, w) as (
   values ('/', 20), ('/pricing', 12), ('/blog/ai-search-guide', 15), ('/blog/llms-txt-explained', 10),
