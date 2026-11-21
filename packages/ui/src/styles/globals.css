@@ -127,3 +127,23 @@
     @apply bg-background text-foreground;
     }
 }
+/* Every interactive control shows a pointer; disabled ones don't. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="option"],
+  [role="menuitem"],
+  [role="radio"],
+  [role="tab"],
+  [role="combobox"],
+  [data-slot="select-trigger"],
+  label[for],
+  summary,
+  a[href] {
+    cursor: pointer;
+  }
+  button:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+}
