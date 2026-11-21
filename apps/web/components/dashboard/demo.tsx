@@ -2,25 +2,24 @@
 
 import { Button } from "@crawlradar/ui/components/button"
 import { Download } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { useMemo, useState } from "react"
+import { toast } from "sonner"
 
 import { DashboardView } from "@/components/dashboard/view"
-import { csvRow } from "@/lib/csv"
 import { DEMO_DOMAIN, generateDemoEvents } from "@/lib/demo-data"
 import { type Filters, RANGES } from "@/lib/filters"
 import { computeStats, recentEvents } from "@/lib/stats"
 
-const COLUMNS = [
-  "timestamp",
-  "page_url",
-  "bot_name",
-  "platform",
-  "bot_type",
-  "user_agent",
-] as const
-
 /** The dashboard running entirely in the browser on generated example data. */
-export function DemoDashboard({ now }: { now: number }) {
+export function DemoDashboard({
+  now,
+  signedIn,
+}: {
+  now: number
+  signedIn?: boolean
+}) {
+  const router = useRouter()
   const events = useMemo(() => generateDemoEvents(now), [now])
   const [filters, setFilters] = useState<Filters & { site: string }>({
     site: "demo",
@@ -39,18 +38,15 @@ export function DemoDashboard({ now }: { now: number }) {
   const stats = useMemo(() => computeStats(events, options), [events, options])
   const recent = useMemo(() => recentEvents(events, options), [events, options])
 
-  function exportCsv() {
-    const rows = recentEvents(events, options, Number.POSITIVE_INFINITY)
-    const csv =
-      csvRow([...COLUMNS]) +
-      rows.map((r) => csvRow(COLUMNS.map((c) => r[c]))).join("")
-    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }))
-    const link = Object.assign(document.createElement("a"), {
-      href: url,
-      download: `crawlradar-demo-${filters.range}.csv`,
+  function explainExport() {
+    toast("This is example data", {
+      description:
+        "Add your own site to collect real crawler data, then export it as CSV.",
+      action: {
+        label: signedIn ? "Open dashboard" : "Get started",
+        onClick: () => router.push(signedIn ? "/dashboard" : "/login"),
+      },
     })
-    link.click()
-    URL.revokeObjectURL(url)
   }
 
   return (
@@ -63,7 +59,11 @@ export function DemoDashboard({ now }: { now: number }) {
       now={now}
       onChange={(change) => setFilters((f) => ({ ...f, ...change }))}
       actions={
-        <Button variant="outline" className="bg-background" onClick={exportCsv}>
+        <Button
+          variant="outline"
+          className="bg-background"
+          onClick={explainExport}
+        >
           <Download /> <span className="hidden sm:inline">Export</span> CSV
         </Button>
       }

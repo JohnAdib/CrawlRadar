@@ -1,9 +1,13 @@
-import { Card, CardContent, CardHeader } from "@crawlradar/ui/components/card"
+import { Card, CardHeader } from "@crawlradar/ui/components/card"
 import { Skeleton } from "@crawlradar/ui/components/skeleton"
 
 export default function SitesLoading() {
   return (
-    <div className="flex flex-col gap-6" aria-busy aria-label="Loading sites">
+    <div
+      className="flex flex-col gap-6"
+      role="status"
+      aria-label="Loading sites"
+    >
       <div className="flex items-end justify-between gap-4">
         <div className="flex flex-col gap-2">
           <Skeleton className="h-8 w-24" />
@@ -11,17 +15,19 @@ export default function SitesLoading() {
         </div>
         <Skeleton className="hidden h-9 w-36 sm:block" />
       </div>
-      {Array.from({ length: 2 }, (_, i) => (
-        <Card key={i}>
-          <CardHeader className="gap-2">
-            <Skeleton className="h-5 w-48" />
-            <Skeleton className="h-4 w-28" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-12 w-full" />
-          </CardContent>
-        </Card>
-      ))}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 3 }, (_, i) => (
+          <Card key={i}>
+            <CardHeader className="gap-3">
+              <div className="flex items-center gap-3">
+                <Skeleton className="size-9 rounded-lg" />
+                <Skeleton className="h-5 w-36" />
+              </div>
+              <Skeleton className="h-5 w-40" />
+            </CardHeader>
+          </Card>
+        ))}
+      </div>
     </div>
   )
 }

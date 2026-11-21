@@ -20,6 +20,8 @@ import Link from "next/link"
 import { Animation } from "@/components/animation"
 import { DemoDashboard } from "@/components/dashboard/demo"
 import { GitHubIcon } from "@/components/github-icon"
+import { Tag } from "@/components/head-tag"
+import { LiveDot } from "@/components/live-dot"
 import { Logo } from "@/components/logo"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { appOrigin, snippet } from "@/lib/snippet"
@@ -137,7 +139,7 @@ export default async function HomePage() {
               variant="outline"
               className="gap-1.5 bg-background/60 px-3 py-1"
             >
-              <span className="size-1.5 rounded-full bg-green-500" />
+              <LiveDot className="size-1.5" />
               Open source · MIT licensed
             </Badge>
             <h1 className="max-w-3xl text-4xl font-semibold tracking-tight text-balance sm:text-6xl">
@@ -165,7 +167,7 @@ export default async function HomePage() {
                 {snippet(origin, "YOUR_SITE_ID")}
               </code>
               <span className="text-xs text-muted-foreground">
-                The whole install: one line in your &lt;head&gt;
+                The whole install: one line in your <Tag />
               </span>
             </div>
           </div>
@@ -177,10 +179,7 @@ export default async function HomePage() {
             <div className="rounded-2xl border bg-muted/40 p-2 shadow-2xl shadow-primary/5 sm:p-3">
               <div className="flex flex-wrap items-center justify-between gap-2 px-2 pt-1 pb-3 text-xs text-muted-foreground sm:px-3">
                 <span className="flex items-center gap-2">
-                  <span className="relative flex size-2">
-                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-green-500 opacity-75" />
-                    <span className="relative inline-flex size-2 rounded-full bg-green-500" />
-                  </span>
+                  <LiveDot />
                   Live demo with example data. Try the filters.
                 </span>
                 <Badge variant="outline" className="bg-background">
@@ -188,7 +187,7 @@ export default async function HomePage() {
                 </Badge>
               </div>
               <div className="rounded-xl border bg-background p-3 sm:p-6">
-                <DemoDashboard now={now} />
+                <DemoDashboard now={now} signedIn={signedIn} />
               </div>
             </div>
           </div>

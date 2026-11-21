@@ -8,19 +8,9 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@crawlradar/ui/components/chart"
-import {
-  Area,
-  AreaChart,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  XAxis,
-  YAxis,
-} from "recharts"
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
 
 import { BOT_TYPES, type BotType } from "@/lib/filters"
-import { platformColor } from "@/lib/platforms"
 import type { TimelinePoint } from "@/lib/stats"
 
 const TYPE_COLORS: Record<BotType, string> = {
@@ -100,7 +90,7 @@ export function TrafficChart({
           allowDecimals={false}
         />
         <ChartTooltip
-          cursor={false}
+          cursor={{ stroke: "var(--border)", strokeWidth: 1 }}
           content={
             <ChartTooltipContent
               indicator="dot"
@@ -121,43 +111,6 @@ export function TrafficChart({
         ))}
         <ChartLegend content={<ChartLegendContent />} />
       </AreaChart>
-    </ChartContainer>
-  )
-}
-
-const visitsConfig = { visits: { label: "Visits" } } satisfies ChartConfig
-
-export function PlatformChart({
-  data,
-}: {
-  data: { platform: string; visits: number }[]
-}) {
-  return (
-    <ChartContainer
-      config={visitsConfig}
-      className="aspect-auto w-full"
-      style={{ height: 36 * data.length + 16 }}
-    >
-      <BarChart data={data} layout="vertical" margin={{ left: 4, right: 16 }}>
-        <XAxis type="number" hide />
-        <YAxis
-          dataKey="platform"
-          type="category"
-          tickLine={false}
-          axisLine={false}
-          width={104}
-          interval={0}
-        />
-        <ChartTooltip
-          cursor={false}
-          content={<ChartTooltipContent hideLabel={false} />}
-        />
-        <Bar dataKey="visits" radius={5} barSize={20}>
-          {data.map((d) => (
-            <Cell key={d.platform} fill={platformColor(d.platform)} />
-          ))}
-        </Bar>
-      </BarChart>
     </ChartContainer>
   )
 }

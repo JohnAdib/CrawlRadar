@@ -23,6 +23,7 @@ import { createContext, useActionState, useContext, useState } from "react"
 import { type AddSiteState, addSite } from "@/app/(app)/sites/actions"
 import { Animation } from "@/components/animation"
 import { CopyBlock } from "@/components/copy-block"
+import { Tag } from "@/components/head-tag"
 
 const OpenAddSite = createContext<() => void>(() => {})
 
@@ -96,8 +97,8 @@ function AddSiteForm({
         <DialogHeader className="items-center">
           <DialogTitle>{state.site.domain} is ready</DialogTitle>
           <DialogDescription>
-            Paste this tag into the &lt;head&gt; of every page. Visits show up
-            on the dashboard within seconds.
+            Paste this tag into the <Tag /> of every page. Visits show up on the
+            dashboard within seconds.
           </DialogDescription>
         </DialogHeader>
         <CopyBlock

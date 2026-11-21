@@ -1,34 +1,34 @@
 "use client"
 
-import { useRouter } from "next/navigation"
-import { useTransition } from "react"
-
+import {
+  DashboardSiteSwitcher,
+  useDashboardNav,
+} from "@/components/dashboard/shell"
 import {
   DashboardView,
   type DashboardViewProps,
 } from "@/components/dashboard/view"
 import { ExportMenu } from "@/components/export-menu"
-import { toQuery } from "@/lib/filters"
 
 /** The real dashboard: filters live in the URL and the server re-renders with new data. */
-export function LiveDashboard(
-  props: Omit<DashboardViewProps, "onChange" | "pending" | "actions">
-) {
-  const router = useRouter()
-  const [pending, startTransition] = useTransition()
-
+export function LiveDashboard({
+  sites,
+  ...props
+}: Omit<
+  DashboardViewProps,
+  "onChange" | "pending" | "actions" | "filters" | "switcher"
+> & {
+  sites: { id: string; domain: string }[]
+}) {
+  const { filters, pending, navigate } = useDashboardNav()
   return (
     <DashboardView
       {...props}
+      filters={filters}
       pending={pending}
-      actions={<ExportMenu filters={props.filters} />}
-      onChange={(change) =>
-        startTransition(() =>
-          router.push(`/dashboard${toQuery({ ...props.filters, ...change })}`, {
-            scroll: false,
-          })
-        )
-      }
+      onChange={navigate}
+      switcher={<DashboardSiteSwitcher sites={sites} />}
+      actions={<ExportMenu filters={filters} />}
     />
   )
 }

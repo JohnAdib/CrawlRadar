@@ -47,7 +47,15 @@ export function TypeBadge({ type }: { type: BotType }) {
   )
 }
 
-/** A ranked list where each row carries a proportional bar behind it. */
+function Empty({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="flex h-full items-center justify-center text-center text-sm text-muted-foreground">
+      {children}
+    </p>
+  )
+}
+
+/** A ranked list; each row has a proportional bar behind it and highlights on hover. */
 function BarList({
   rows,
 }: {
@@ -55,25 +63,22 @@ function BarList({
     key: string
     label: React.ReactNode
     value: number
-    color?: string
+    title?: string
     mono?: boolean
   }[]
 }) {
   const max = Math.max(...rows.map((r) => r.value), 1)
   return (
-    <ul className="flex flex-col gap-1.5">
+    <ul className="flex flex-col gap-1">
       {rows.map((r) => (
         <li
           key={r.key}
-          className="relative flex h-8 items-center justify-between gap-3 px-2.5 text-sm"
+          title={r.title}
+          className="group relative flex h-8 shrink-0 items-center justify-between gap-3 rounded-md px-2.5 text-sm transition-colors hover:bg-muted/70"
         >
           <span
-            className="absolute inset-y-0 left-0 rounded-md"
-            style={{
-              width: `${Math.max((r.value / max) * 100, 2)}%`,
-              backgroundColor: r.color ?? "var(--chart-1)",
-              opacity: 0.14,
-            }}
+            className="absolute inset-y-1 left-0 rounded-md bg-chart-1/15 transition-[width,background-color] duration-500 group-hover:bg-chart-1/25"
+            style={{ width: `${Math.max((r.value / max) * 100, 2)}%` }}
             aria-hidden
           />
           <span
@@ -93,16 +98,29 @@ function BarList({
   )
 }
 
+export function Platforms({ platforms }: { platforms: Stats["by_platform"] }) {
+  return (
+    <BarList
+      rows={platforms.map((p) => ({
+        key: p.platform,
+        label: (
+          <span className="flex items-center gap-2">
+            <PlatformDot platform={p.platform} /> {p.platform}
+          </span>
+        ),
+        value: p.visits,
+      }))}
+    />
+  )
+}
+
 export function TopPages({ pages }: { pages: Stats["top_pages"] }) {
   return (
     <BarList
       rows={pages.map((p) => ({
         key: p.page_path ?? "",
-        label: (
-          <span title={p.page_path ?? ""}>
-            {p.page_path || "(unknown page)"}
-          </span>
-        ),
+        label: p.page_path || "(unknown page)",
+        title: p.page_path ?? undefined,
         value: p.visits,
         mono: true,
       }))}
@@ -112,11 +130,7 @@ export function TopPages({ pages }: { pages: Stats["top_pages"] }) {
 
 export function Referrers({ referrers }: { referrers: Stats["referrers"] }) {
   if (referrers.length === 0) {
-    return (
-      <p className="py-6 text-center text-sm text-muted-foreground">
-        No visitors from AI assistants in this range yet.
-      </p>
-    )
+    return <Empty>No visitors from AI assistants in this range yet.</Empty>
   }
   return (
     <BarList
@@ -128,30 +142,31 @@ export function Referrers({ referrers }: { referrers: Stats["referrers"] }) {
           </span>
         ),
         value: r.visits,
-        color: platformColor(r.platform),
       }))}
     />
   )
 }
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+const HOURS = Array.from({ length: 24 }, (_, hour) => hour)
 
 /** When crawlers visit: weekday x hour (UTC), darker = more visits. */
 export function Heatmap({ cells }: { cells: Stats["heatmap"] }) {
+  if (cells.length === 0) return <Empty>No crawler visits in this range.</Empty>
   const grid = new Map(cells.map((c) => [`${c.dow}:${c.hour}`, c.visits]))
   const max = Math.max(...cells.map((c) => c.visits), 1)
   return (
-    <div className="overflow-x-auto">
-      <div className="grid min-w-[480px] grid-cols-[2.25rem_repeat(24,minmax(0,1fr))] gap-[3px] text-[10px] text-muted-foreground">
+    <div className="flex h-full items-center overflow-x-auto">
+      <div className="grid w-full min-w-[440px] grid-cols-[2.25rem_repeat(24,minmax(0,1fr))] gap-[3px] text-[10px] text-muted-foreground">
         {DAYS.map((day, d) => (
           <div key={day} className="contents">
             <span className="flex items-center">{day}</span>
-            {Array.from({ length: 24 }, (_, hour) => {
+            {HOURS.map((hour) => {
               const value = grid.get(`${d + 1}:${hour}`) ?? 0
               return (
                 <span
                   key={hour}
-                  className="aspect-square rounded-[3px] bg-muted"
+                  className="aspect-square rounded-[3px] bg-muted transition-transform duration-150 hover:scale-125 hover:ring-2 hover:ring-chart-1/50"
                   title={`${day} ${String(hour).padStart(2, "0")}:00 UTC · ${formatNumber(value)} visits`}
                   style={
                     value
@@ -167,7 +182,7 @@ export function Heatmap({ cells }: { cells: Stats["heatmap"] }) {
           </div>
         ))}
         <span />
-        {Array.from({ length: 24 }, (_, hour) => (
+        {HOURS.map((hour) => (
           <span key={hour} className="text-center">
             {hour % 6 === 0 ? hour : ""}
           </span>
@@ -186,7 +201,7 @@ export function CrawlersTable({
 }) {
   return (
     <Table className="table-fixed">
-      <TableHeader>
+      <TableHeader className="sticky top-0 z-10 bg-card">
         <TableRow>
           <TableHead>Crawler</TableHead>
           <TableHead className="hidden w-28 sm:table-cell">Type</TableHead>
@@ -242,9 +257,12 @@ export function ActivityFeed({
   now?: number
 }) {
   return (
-    <ul className="flex flex-col divide-y">
+    <ul className="flex flex-col">
       {events.map((e) => (
-        <li key={e.id} className="flex items-center gap-3 py-2.5 text-sm">
+        <li
+          key={e.id}
+          className="flex items-center gap-3 rounded-md border-b px-2 py-2.5 text-sm transition-colors last:border-b-0 hover:bg-muted/70"
+        >
           <PlatformDot platform={e.platform} className="size-2.5" />
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 items-center gap-2">

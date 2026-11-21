@@ -16,6 +16,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@crawlradar/ui/components/empty"
+import { cn } from "@crawlradar/ui/lib/utils"
 import {
   Activity,
   Bot,
@@ -24,17 +25,15 @@ import {
   SearchX,
 } from "lucide-react"
 
-import { PlatformChart, TrafficChart } from "@/components/dashboard/charts"
+import { AnimatedNumber } from "@/components/animated-number"
+import { TrafficChart } from "@/components/dashboard/charts"
+import { FilterBar, type FilterChange } from "@/components/dashboard/filters"
 import {
-  type FilterChange,
-  FilterBar,
-  SiteSwitcher,
-} from "@/components/dashboard/filters"
-import {
-  type ActivityItem,
   ActivityFeed,
+  type ActivityItem,
   CrawlersTable,
   Heatmap,
+  Platforms,
   Referrers,
   TopPages,
 } from "@/components/dashboard/panels"
@@ -48,9 +47,10 @@ export interface DashboardViewProps {
   events: ActivityItem[]
   filters: Filters & { site: string }
   domain: string
-  sites?: { id: string; domain: string }[]
   onChange: (change: FilterChange) => void
   pending?: boolean
+  /** Site picker, shown next to the actions when the user has several sites. */
+  switcher?: React.ReactNode
   actions?: React.ReactNode
   /** Fixed clock for relative times (keeps server and client render identical). */
   now?: number
@@ -62,19 +62,35 @@ function Panel({
   description,
   children,
   className,
+  bodyClassName,
+  index = 0,
 }: {
   title: string
   description?: string
   children: React.ReactNode
   className?: string
+  /** Fixed body height keeps paired panels the same size. */
+  bodyClassName?: string
+  index?: number
 }) {
   return (
-    <Card className={className}>
+    <Card
+      className={cn(
+        "transition-[border-color,box-shadow] duration-200 animate-in fade-in motion-reduce:animate-none slide-in-from-bottom-3 fill-mode-both hover:border-foreground/15 hover:shadow-md",
+        className
+      )}
+      style={{
+        animationDelay: `${120 + index * 60}ms`,
+        animationDuration: "500ms",
+      }}
+    >
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         {description && <CardDescription>{description}</CardDescription>}
       </CardHeader>
-      <CardContent>{children}</CardContent>
+      <CardContent className={cn("min-h-0", bodyClassName)}>
+        {children}
+      </CardContent>
     </Card>
   )
 }
@@ -84,9 +100,9 @@ export function DashboardView({
   events,
   filters,
   domain,
-  sites = [],
   onChange,
   pending,
+  switcher,
   actions,
   now,
   title = "AI crawler activity",
@@ -106,13 +122,7 @@ export function DashboardView({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {sites.length > 1 && (
-            <SiteSwitcher
-              value={filters.site}
-              sites={sites}
-              onChange={onChange}
-            />
-          )}
+          {switcher}
           {actions}
         </div>
       </div>
@@ -168,17 +178,19 @@ export function DashboardView({
           <>
             <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
               <StatCard
+                index={0}
                 icon={Activity}
                 label="AI crawler visits"
-                value={formatNumber(stats.crawls)}
+                value={<AnimatedNumber value={stats.crawls} />}
                 delta={{ current: stats.crawls, previous: stats.prev_crawls }}
                 hint={`24h ${formatNumber(stats.totals["24h"])} · 7d ${formatNumber(stats.totals["7d"])} · 30d ${formatNumber(stats.totals["30d"])}`}
                 spark={stats.timeline.map((p) => p.visits - p.referral)}
               />
               <StatCard
+                index={1}
                 icon={MousePointerClick}
                 label="AI referrals"
-                value={formatNumber(stats.referrals)}
+                value={<AnimatedNumber value={stats.referrals} />}
                 delta={{
                   current: stats.referrals,
                   previous: stats.prev_referrals,
@@ -188,15 +200,17 @@ export function DashboardView({
                 color="var(--chart-4)"
               />
               <StatCard
+                index={2}
                 icon={Bot}
                 label="Active crawlers"
-                value={String(stats.active_bots)}
+                value={<AnimatedNumber value={stats.active_bots} />}
                 hint={`Across ${stats.active_platforms} platform${stats.active_platforms === 1 ? "" : "s"}`}
               />
               <StatCard
+                index={3}
                 icon={FileStack}
                 label="Pages crawled"
-                value={formatNumber(stats.pages)}
+                value={<AnimatedNumber value={stats.pages} />}
                 hint={
                   stats.crawls > 0
                     ? `${(stats.crawls / Math.max(stats.pages, 1)).toFixed(1)} crawls per page`
@@ -206,6 +220,7 @@ export function DashboardView({
             </div>
 
             <Panel
+              index={0}
               title="AI traffic"
               description={`Visits per ${period}, by type of AI bot`}
             >
@@ -214,31 +229,37 @@ export function DashboardView({
 
             <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
               <Panel
+                index={1}
                 title="Visits by platform"
                 description="Which AI companies crawl you most"
+                bodyClassName="h-[22.5rem] overflow-y-auto"
               >
-                <PlatformChart data={stats.by_platform} />
+                <Platforms platforms={stats.by_platform} />
               </Panel>
               <Panel
-                title="AI referrals by source"
-                description="Assistants sending people to your site"
-              >
-                <Referrers referrers={stats.referrers} />
-              </Panel>
-            </div>
-
-            <div className="grid gap-4 sm:gap-6 lg:grid-cols-5">
-              <Panel
+                index={2}
                 title="Top pages"
                 description="Pages ranked by AI visits"
-                className="lg:col-span-2"
+                bodyClassName="h-[22.5rem] overflow-y-auto"
               >
                 <TopPages pages={stats.top_pages} />
               </Panel>
+            </div>
+
+            <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
               <Panel
+                index={3}
+                title="AI referrals by source"
+                description="Assistants sending people to your site"
+                bodyClassName="h-44 overflow-y-auto"
+              >
+                <Referrers referrers={stats.referrers} />
+              </Panel>
+              <Panel
+                index={4}
                 title="When crawlers visit"
                 description="Crawler visits by weekday and hour (UTC)"
-                className="lg:col-span-3"
+                bodyClassName="h-44"
               >
                 <Heatmap cells={stats.heatmap} />
               </Panel>
@@ -246,16 +267,20 @@ export function DashboardView({
 
             <div className="grid gap-4 sm:gap-6 lg:grid-cols-5">
               <Panel
+                index={5}
                 title="Crawlers"
                 description="Every AI bot seen in this range"
                 className="lg:col-span-3"
+                bodyClassName="h-[26rem] overflow-y-auto"
               >
                 <CrawlersTable bots={stats.by_bot} now={now} />
               </Panel>
               <Panel
+                index={6}
                 title="Recent activity"
                 description="Latest visits"
                 className="lg:col-span-2"
+                bodyClassName="h-[26rem] overflow-y-auto"
               >
                 <ActivityFeed events={events.slice(0, 12)} now={now} />
               </Panel>

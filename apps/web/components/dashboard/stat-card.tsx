@@ -35,6 +35,7 @@ function Sparkline({ values, color }: { values: number[]; color: string }) {
         strokeWidth={1.5}
         vectorEffect="non-scaling-stroke"
         strokeLinejoin="round"
+        className="animate-[sparkline-draw_900ms_ease-out_both] [stroke-dasharray:400] motion-reduce:animate-none"
       />
     </svg>
   )
@@ -79,17 +80,23 @@ export function StatCard({
   hint,
   spark,
   color = "var(--chart-1)",
+  index = 0,
 }: {
   icon: React.ComponentType<{ className?: string }>
   label: string
-  value: string
+  value: React.ReactNode
   delta?: { current: number; previous: number }
   hint?: string
   spark?: number[]
   color?: string
+  /** Position in the row, used to stagger the entrance animation. */
+  index?: number
 }) {
   return (
-    <Card className="gap-3 overflow-hidden py-4 sm:py-5">
+    <Card
+      className="gap-3 overflow-hidden py-4 transition-[border-color,box-shadow] duration-200 animate-in fade-in motion-reduce:animate-none slide-in-from-bottom-2 fill-mode-both hover:border-foreground/20 hover:shadow-md sm:py-5"
+      style={{ animationDelay: `${index * 60}ms`, animationDuration: "500ms" }}
+    >
       <CardHeader className="gap-1.5 px-4 sm:px-5">
         <CardDescription className="flex items-center gap-2 text-xs sm:text-sm">
           <Icon className="size-4 shrink-0" />
@@ -106,7 +113,7 @@ export function StatCard({
         )}
       </CardHeader>
       {spark && (
-        <div className="-mb-4 px-0 sm:-mb-5">
+        <div className="-mb-4 sm:-mb-5">
           <Sparkline values={spark} color={color} />
         </div>
       )}

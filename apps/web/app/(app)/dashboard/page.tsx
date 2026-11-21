@@ -14,6 +14,12 @@ import { Animation } from "@/components/animation"
 import { AutoRefresh } from "@/components/auto-refresh"
 import { CopyBlock } from "@/components/copy-block"
 import { LiveDashboard } from "@/components/dashboard/live"
+import {
+  DashboardShell,
+  DashboardSiteSwitcher,
+} from "@/components/dashboard/shell"
+import { Tag } from "@/components/head-tag"
+import { LiveDot } from "@/components/live-dot"
 import { parseFilters, sinceFor } from "@/lib/filters"
 import { appOrigin, snippet } from "@/lib/snippet"
 import type { Stats } from "@/lib/stats"
@@ -36,6 +42,7 @@ export default async function DashboardPage({
   if (!sites?.length) redirect("/sites")
   const site = sites.find((s) => s.id === filters.site) ?? sites[0]!
   const since = sinceFor(filters.range)
+  const current = { ...filters, site: site.id }
 
   let recent = supabase
     .from("crawler_events")
@@ -59,71 +66,70 @@ export default async function DashboardPage({
   if (statsRes.error) throw statsRes.error
   const stats = statsRes.data as unknown as Stats
 
-  // No data has ever arrived for this site: guide the install instead of showing empty charts.
-  if (stats.platforms.length === 0) {
-    return (
-      <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight">
-            AI crawler activity
-          </h1>
-          <p className="text-sm text-muted-foreground sm:text-base">
-            {site.domain}
-          </p>
-        </div>
-        <AutoRefresh seconds={10} />
-        <Card>
-          <CardContent>
-            <Empty className="py-8">
-              <EmptyHeader className="max-w-md">
-                <EmptyMedia>
-                  <Animation name="radar" className="size-36" />
-                </EmptyMedia>
-                <EmptyTitle className="text-xl">
-                  Listening for AI crawlers
-                </EmptyTitle>
-                <EmptyDescription>
-                  Add this tag to the &lt;head&gt; of{" "}
-                  <a
-                    href={`https://${site.domain}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-medium text-foreground underline underline-offset-4"
-                  >
-                    {site.domain}
-                  </a>
-                  . The first GPTBot, ClaudeBot or ChatGPT referral appears here
-                  on its own.
-                </EmptyDescription>
-              </EmptyHeader>
-              <EmptyContent className="w-full max-w-xl">
-                <CopyBlock
-                  code={snippet(await appOrigin(), site.id)}
-                  label="Snippet"
-                  className="w-full text-left"
-                />
-                <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className="relative flex size-2">
-                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-green-500 opacity-75" />
-                    <span className="relative inline-flex size-2 rounded-full bg-green-500" />
-                  </span>
-                  Checking for new visits every 10 seconds
-                </p>
-              </EmptyContent>
-            </Empty>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
   return (
-    <LiveDashboard
-      stats={stats}
-      events={recentRes.data ?? []}
-      filters={{ ...filters, site: site.id }}
-      domain={site.domain}
-      sites={sites}
-    />
+    <DashboardShell filters={current}>
+      {stats.platforms.length === 0 ? (
+        // No data has ever arrived for this site: guide the install instead of empty charts.
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="flex min-w-0 flex-col gap-1">
+              <h1 className="text-2xl font-semibold tracking-tight">
+                AI crawler activity
+              </h1>
+              <p className="truncate text-sm text-muted-foreground sm:text-base">
+                {site.domain}
+              </p>
+            </div>
+            <DashboardSiteSwitcher sites={sites} />
+          </div>
+          <AutoRefresh seconds={10} />
+          <Card className="animate-in fade-in motion-reduce:animate-none slide-in-from-bottom-2 duration-500">
+            <CardContent>
+              <Empty className="py-8">
+                <EmptyHeader className="max-w-md">
+                  <EmptyMedia>
+                    <Animation name="radar" className="size-36" />
+                  </EmptyMedia>
+                  <EmptyTitle className="text-xl">
+                    Listening for AI crawlers
+                  </EmptyTitle>
+                  <EmptyDescription>
+                    Add this tag to the <Tag /> of{" "}
+                    <a
+                      href={`https://${site.domain}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="font-medium text-foreground underline underline-offset-4"
+                    >
+                      {site.domain}
+                    </a>
+                    . The first GPTBot, ClaudeBot or ChatGPT referral appears
+                    here on its own.
+                  </EmptyDescription>
+                </EmptyHeader>
+                <EmptyContent className="w-full max-w-xl">
+                  <CopyBlock
+                    code={snippet(await appOrigin(), site.id)}
+                    label="Snippet"
+                    className="w-full text-left"
+                  />
+                  <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <LiveDot />
+                    Checking for new visits every 10 seconds
+                  </p>
+                </EmptyContent>
+              </Empty>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <LiveDashboard
+          stats={stats}
+          events={recentRes.data ?? []}
+          domain={site.domain}
+          sites={sites}
+        />
+      )}
+    </DashboardShell>
   )
 }

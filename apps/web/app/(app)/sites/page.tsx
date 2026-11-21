@@ -1,8 +1,5 @@
-import { Badge } from "@crawlradar/ui/components/badge"
 import {
   Card,
-  CardAction,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -15,39 +12,27 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@crawlradar/ui/components/empty"
-import { Globe } from "lucide-react"
+import { ChevronRight, Globe } from "lucide-react"
 import type { Metadata } from "next"
+import Link from "next/link"
 
 import { AddSiteButton } from "@/components/add-site-dialog"
 import { Animation } from "@/components/animation"
-import { CopyBlock } from "@/components/copy-block"
+import { Tag } from "@/components/head-tag"
 import { PageHeader } from "@/components/page-header"
-import { SiteMenu } from "@/components/site-menu"
-import { timeAgo } from "@/lib/format"
-import { appOrigin, snippet } from "@/lib/snippet"
+import { SiteStatus } from "@/components/site-status"
+import { visits } from "@/lib/format"
+import { siteActivity } from "@/lib/sites"
 import { createClient } from "@/lib/supabase/server"
 
 export const metadata: Metadata = { title: "Sites · CrawlRadar" }
 
 export default async function SitesPage() {
   const supabase = await createClient()
-  const [{ data: sites }, origin] = await Promise.all([
-    supabase.from("sites").select("id, domain, created_at").order("created_at"),
-    appOrigin(),
-  ])
-
-  const lastSeen = await Promise.all(
-    (sites ?? []).map(async (site) => {
-      const { data } = await supabase
-        .from("crawler_events")
-        .select("timestamp")
-        .eq("site_id", site.id)
-        .order("timestamp", { ascending: false })
-        .limit(1)
-        .maybeSingle()
-      return data?.timestamp ?? null
-    })
-  )
+  const { data: sites } = await supabase
+    .from("sites")
+    .select("id, domain, created_at")
+    .order("created_at")
 
   if (!sites?.length) {
     return (
@@ -59,7 +44,7 @@ export default async function SitesPage() {
           <EmptyTitle className="text-xl">Add your first website</EmptyTitle>
           <EmptyDescription>
             CrawlRadar shows which AI crawlers, like GPTBot, ClaudeBot and
-            PerplexityBot, read your site. Setup takes one line of HTML.
+            PerplexityBot, read your site. Setup is one line in your <Tag />.
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
@@ -69,49 +54,55 @@ export default async function SitesPage() {
     )
   }
 
+  const activity = await Promise.all(
+    sites.map((site) => siteActivity(supabase, site.id))
+  )
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Sites"
-        description="Paste a site's snippet into the <head> of every page. That's the whole install."
+        description="The websites you track. Open one to install its snippet or manage it."
         action={<AddSiteButton />}
       />
 
-      <div className="grid gap-4">
+      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {sites.map((site, i) => (
-          <Card key={site.id}>
-            <CardHeader>
-              <CardTitle className="flex min-w-0 flex-wrap items-center gap-2">
-                <Globe className="size-4 shrink-0 text-muted-foreground" />
-                <span className="truncate">{site.domain}</span>
-                {lastSeen[i] ? (
-                  <Badge variant="secondary" className="gap-1.5">
-                    <span className="size-1.5 rounded-full bg-green-500" />
-                    Last hit {timeAgo(lastSeen[i])}
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="gap-1.5">
-                    <span className="size-1.5 animate-pulse rounded-full bg-amber-500" />
-                    Waiting for first hit
-                  </Badge>
-                )}
-              </CardTitle>
-              <CardDescription>
-                Added{" "}
-                {new Date(site.created_at).toLocaleDateString("en", {
-                  dateStyle: "medium",
-                })}
-              </CardDescription>
-              <CardAction>
-                <SiteMenu id={site.id} domain={site.domain} />
-              </CardAction>
-            </CardHeader>
-            <CardContent>
-              <CopyBlock code={snippet(origin, site.id)} label="Snippet" />
-            </CardContent>
-          </Card>
+          <li
+            key={site.id}
+            className="animate-in fade-in motion-reduce:animate-none slide-in-from-bottom-2 fill-mode-both"
+            style={{
+              animationDelay: `${i * 50}ms`,
+              animationDuration: "400ms",
+            }}
+          >
+            <Link
+              href={`/sites/${site.id}`}
+              className="group block h-full rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+            >
+              <Card className="h-full transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-foreground/20 group-hover:shadow-md">
+                <CardHeader className="gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                      <Globe className="size-4" />
+                    </span>
+                    <CardTitle className="min-w-0 flex-1 truncate">
+                      {site.domain}
+                    </CardTitle>
+                    <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <SiteStatus lastSeen={activity[i]!.lastSeen} />
+                    <CardDescription className="tabular-nums">
+                      {visits(activity[i]!.visits30d)} · 30d
+                    </CardDescription>
+                  </div>
+                </CardHeader>
+              </Card>
+            </Link>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   )
 }
