@@ -147,25 +147,79 @@ timestamp,page_url,bot_name,platform,bot_type,user_agent
 
 ## Implementation notes
 
-How the requirements map to the code, and where the implementation goes further or deliberately differs.
+Every requirement above, where it lives in the code, and how it is tested.
+Tests: **unit** = Vitest (100% coverage of the logic), **e2e** = Playwright, **db** = pgTAP.
 
-| Requirement    | Where                                                                                                     | Notes                                                                                                                                                                                 |
-| -------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR-1.1 to 1.4  | [`apps/web/public/t.js`](../apps/web/public/t.js), [`/api/collect`](../apps/web/app/api/collect/route.ts) | About 400 bytes, `async`. Served from the dashboard's own domain, so the install is one line.                                                                                         |
-| FR-1.2, FR-2.x | [`supabase/functions/_shared/bots.ts`](../supabase/functions/_shared/bots.ts)                             | The user agent is read from the request header on the server, never from page script. The list is extended with Claude-User, Claude-SearchBot, Perplexity-User, Amazonbot and others. |
-| FR-1.3         | [`supabase/functions/track`](../supabase/functions/track/index.ts)                                        | IPs are stored as a SHA-256 hash with a salt that rotates daily.                                                                                                                      |
-| FR-3.x         | [`crawler_stats()`](../supabase/migrations), [`components/dashboard`](../apps/web/components/dashboard)   | One SQL function returns every chart's data in one round trip, under RLS.                                                                                                             |
-| FR-4.1         | [`/export`](../apps/web/app/(app)/export/route.ts)                                                        | Pages through all rows (past the 1,000-row API limit) and escapes spreadsheet formulas.                                                                                               |
-| AC-1 to AC-6   | [`e2e/`](../e2e), unit tests                                                                              | Covered by the Playwright suite and unit tests.                                                                                                                                       |
+### User stories
 
-**Deliberate differences**
+| ID   | How CrawlRadar answers it                                                                                                                                                                                                                     | Tested                                           |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| US-1 | **Platforms** view: share donut, traffic per platform over time, a row per platform with its crawlers. Brand logos for 40+ platforms, including DeepSeek, Alibaba (Qwen), Moonshot AI (Kimi), Baidu, Tencent, Zhipu AI and Bytedance (Doubao) | e2e `tracking`, `dashboard`                      |
+| US-2 | **Pages** view: every crawled page ranked by visits, with AI crawls, referrals, crawlers, top platform, last crawl and a search box. Any page opens its own report                                                                            | e2e `dashboard`, `tracking`; unit `computePages` |
+| US-3 | **Overview**: totals for 24h / 7d / 30d with change against the previous period, traffic over time by platform or by type, a weekday-by-hour heatmap                                                                                          | unit `computeStats`; e2e `dashboard`             |
+| US-4 | **Onboarding**: five locked steps (account, website, install, verify, explore) with a progress tracker, install tips per platform and an automatic "it works" check                                                                           | e2e `onboarding`                                 |
+| US-5 | **Export**: CSV of every field, for the current view or all data, from every view and from Settings                                                                                                                                           | e2e `dashboard`; unit `csv`                      |
+
+### Functional requirements
+
+| ID     | Where                                                                     | Notes                                                                                                                                                                                |
+| ------ | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| FR-1.1 | [`public/t.js`](../apps/web/public/t.js)                                  | About 400 bytes (limit 5 KB)                                                                                                                                                         |
+| FR-1.2 | [`_shared/bots.ts`](../supabase/functions/_shared/bots.ts)                | The user agent is read from the request header on the server, never from page script                                                                                                 |
+| FR-1.3 | [`track/index.ts`](../supabase/functions/track/index.ts)                  | Page URL, path, timestamp and a SHA-256 IP hash with a salt that rotates daily                                                                                                       |
+| FR-1.4 | [`lib/snippet.ts`](../apps/web/lib/snippet.ts)                            | `<script async>`; the beacon is an image request, so it never blocks the page                                                                                                        |
+| FR-2.1 | [`_shared/ai-bots.ts`](../supabase/functions/_shared/ai-bots.ts)          | 60+ AI crawlers, cross-checked with the community [ai.robots.txt](https://github.com/ai-robots-txt/ai.robots.txt) list. Case-insensitive substring matching survives version changes |
+| FR-2.2 | same                                                                      | Platform per bot (the company); assistants are named separately for referrals                                                                                                        |
+| FR-2.3 | [`bot-types.ts`](../supabase/functions/_shared/bot-types.ts)              | Training, search, assistant, plus referral and search engine                                                                                                                         |
+| FR-2.4 | [`bots.ts`](../supabase/functions/_shared/bots.ts)                        | Any other bot, detected with the maintained [isbot](https://github.com/omrilotan/isbot) pattern list, is stored as platform "Unknown", named from its user agent                     |
+| FR-3.1 | [`stat-row.tsx`](../apps/web/components/dashboard/stat-row.tsx)           | Fixed 24h / 7d / 30d totals on the first card, independent of the selected range                                                                                                     |
+| FR-3.2 | Overview and Platforms views                                              | Bar list, donut and stacked area charts                                                                                                                                              |
+| FR-3.3 | Overview (top 10) and Pages view (all)                                    |                                                                                                                                                                                      |
+| FR-3.4 | [`traffic-chart.tsx`](../apps/web/components/dashboard/traffic-chart.tsx) | Hourly for 24h, daily otherwise; split by platform or by type                                                                                                                        |
+| FR-3.5 | [`filters.tsx`](../apps/web/components/dashboard/filters.tsx)             | Range, platform and type, kept in the URL; also page and platform reports                                                                                                            |
+| FR-3.6 | Overview (latest 10) and **Activity log** view                            | The log is paginated (50 per page), filterable, and shows user agent and referrer                                                                                                    |
+| FR-4.1 | [`/export`](<../apps/web/app/(app)/export/route.ts>)                      | Written with [PapaParse](https://www.papaparse.com/); pages past the 1,000-row API limit; neutralises spreadsheet formulas                                                           |
+
+### Views (7.1) and install flow (7.2)
+
+| View                                 | Route                  |
+| ------------------------------------ | ---------------------- |
+| Overview                             | `/dashboard`           |
+| Platforms                            | `/dashboard/platforms` |
+| Pages                                | `/dashboard/pages`     |
+| Activity log                         | `/dashboard/activity`  |
+| Settings (snippet, CSV export, site) | `/dashboard/settings`  |
+
+The install flow is the onboarding at `/onboarding`: sign up, add a domain, copy the generated snippet (with the site ID), paste it into the `<head>`, then the first visit to the site unlocks the dashboard. The check also looks for the tag in the site's HTML.
+
+### Acceptance criteria
+
+| ID   | Proof                                                                                               |
+| ---- | --------------------------------------------------------------------------------------------------- |
+| AC-1 | unit `bots.test.ts` (GPTBot, ClaudeBot, PerplexityBot, Google-Extended, and every other listed bot) |
+| AC-2 | e2e `dashboard` and `tracking` (visits by platform, Platforms view)                                 |
+| AC-3 | e2e `dashboard` (Pages view), unit `computePages`                                                   |
+| AC-4 | e2e `dashboard` ("filters are kept in the URL")                                                     |
+| AC-5 | e2e `dashboard` (CSV header and file names)                                                         |
+| AC-6 | e2e `onboarding`: sign-up to working dashboard in a few clicks                                      |
+
+### Phases
+
+- **Phase 1:** Supabase project, schema, RLS, the `track` Edge Function, classification, the tracking snippet, end-to-end tests. All done.
+- **Phase 2:** Next.js with Supabase Auth, layout, overview stats, platform chart, top pages, activity log with filters, CSV export, tests. All done.
+
+### Risks
+
+| Risk                        | What was done                                                                                                                              |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Bots may not run JavaScript | An optional `<noscript>` pixel counts crawlers that fetch images; the README documents the rest and server-side tracking is on the roadmap |
+| Signatures change           | Partial, case-insensitive matching, a list checked against ai.robots.txt, and isbot for anything new                                       |
+| High volume                 | Only bot and referral hits are stored; indexes on `(site_id, timestamp)`; the upgrade path is in the README                                |
+
+### Deliberate differences
 
 - **The beacon is a GET image request, not a POST.** It needs no CORS preflight and works the same for the `<noscript>` pixel.
-- **AI referrals were added.** People arriving from ChatGPT, Perplexity, Claude, Gemini or Copilot are tracked as a fifth bot type, `referral`, because they matter as much as crawlers.
-- **The schema was hardened:**
-  - `timestamptz` instead of `timestamp`
-  - `not null` and check constraints
-  - cascading deletes
-  - a `referrer` column
-  - insert and delete RLS policies (the initial design only had select policies, so users couldn't add sites)
+- **AI referrals were added.** People arriving from ChatGPT, Perplexity, Claude, Gemini, DeepSeek, Kimi, Qwen and others are tracked as their own type, `referral`.
+- **Search engines were added.** Googlebot, Bingbot, Baiduspider, YandexBot and others are stored as `search_engine`, shown alongside, and kept out of the "AI crawler" totals.
+- **The schema was hardened:** `timestamptz`, `not null` and check constraints, cascading deletes, a `referrer` column, `sites.installed_at` for onboarding, and insert, delete and column-limited update policies.
 - **`Google-Extended` and `Applebot-Extended` are robots.txt tokens.** Google and Apple crawl with their normal user agents, so these two rarely appear in real traffic. They are still matched (AC-1).

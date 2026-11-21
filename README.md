@@ -27,21 +27,27 @@ Regular analytics tools filter bots out. But AI platforms now read the web aroun
 
 ## Features
 
-- **One-line install.** A single async `<script>` tag served from your own CrawlRadar domain. The tracker is about 400 bytes.
-- **Every AI crawler, classified.** Known bots are grouped by platform (OpenAI, Anthropic, Google, Perplexity, Meta, Apple, Amazon...) and by purpose: training, search or assistant. Unknown self-declared bots are flagged as `Unknown`.
-- **AI referrals.** Count the people who click through from ChatGPT, Perplexity, Claude, Gemini and Copilot.
-- **A dashboard worth opening:**
-  - crawler visits and referrals with change versus the previous period
-  - AI traffic stacked by type
-  - visits by platform
-  - referral sources
-  - top pages
-  - a weekday × hour heatmap
-  - a crawler table with last-seen times
-  - a recent activity feed
-- **Filters and export.** 24h / 7d / 30d ranges, platform and bot-type filters kept in the URL, and CSV export of the current view or a site's full history.
-- **Polished details.** Animated empty states that guide installation and update live when the first hit lands, loading skeletons, light and dark mode, and a layout built for phones.
+- **One-line install.** A single async `<script>` tag served from your own CrawlRadar domain. The tracker is about 400 bytes and never blocks the page. An optional `<noscript>` pixel also counts crawlers that don't run JavaScript.
+- **Guided onboarding.** Five locked steps (account, website, install, verify, explore) with a progress tracker and install tips for WordPress, Shopify, Webflow and frameworks. The dashboard unlocks once the snippet is seen working.
+- **Every AI crawler, classified.** 60+ AI bots grouped by platform and purpose (training, search, assistant), cross-checked with the community [ai.robots.txt](https://github.com/ai-robots-txt/ai.robots.txt) list. That includes Chinese AI platforms: DeepSeek, Qwen and Tongyi (Alibaba), Kimi (Moonshot AI), Doubao (Bytedance), ERNIE (Baidu), Hunyuan (Tencent) and ChatGLM (Zhipu AI). Any other bot is caught by [isbot](https://github.com/omrilotan/isbot) and flagged `Unknown`, named from its user agent.
+- **Search engines alongside.** Googlebot, Bingbot, Baiduspider, YandexBot and others are recorded as their own type, and kept out of the AI totals.
+- **AI referrals.** Count the people who click through from ChatGPT, Perplexity, Claude, Gemini, Copilot, Grok, DeepSeek, Kimi, Qwen and more.
+- **Five views, as in the [requirements](docs/PRD.md):**
+  - **Overview:** visits and referrals against the previous period, traffic by platform or by type, a weekday × hour heatmap, top pages, platforms, crawlers and the latest visits
+  - **Platforms:** share of visits, traffic per platform over time, and every platform with its crawlers
+  - **Pages:** every crawled page ranked and searchable; any page opens its own report
+  - **Activity log:** every visit with its user agent and referrer, filterable and paginated
+  - **Settings:** the snippet, CSV export and the site itself
+- **Filters and export.** 24h / 7d / 30d ranges, platform and bot-type filters kept in the URL, and CSV export (written with [PapaParse](https://www.papaparse.com/)) of the current view or a site's full history.
+- **Polished details.** Animated empty states, loading states, interactive sparklines, light and dark mode, and a layout built for phones.
 - **Private and multi-tenant.** Supabase Auth plus Postgres row-level security, so users only ever see their own data. IPs are stored as a daily-salted hash, never raw.
+
+<table>
+  <tr>
+    <td><img alt="Platforms view: share of visits, traffic per platform and a row per platform" src="docs/images/platforms-dark.png"></td>
+    <td><img alt="Onboarding, step 3 of 5: install the snippet" src="docs/images/onboarding-dark.png"></td>
+  </tr>
+</table>
 
 ## How it works
 
@@ -54,7 +60,7 @@ flowchart TB
 ```
 
 1. **Collect.** Your site loads `/t.js` from your CrawlRadar domain. It sends the page URL and referrer to `/api/collect` on the same domain, so customers never see a backend URL.
-2. **Classify.** `/api/collect` forwards the visit, with the visitor's real User-Agent and IP, to the `track` Edge Function. The function classifies it from the request header (page script can't fake it) and stores only AI crawler hits and AI referrals. Ordinary human visits are dropped.
+2. **Classify.** `/api/collect` forwards the visit, with the visitor's real User-Agent and IP, to the `track` Edge Function. The function classifies it from the request header (page script can't fake it) and stores only bot hits and AI referrals. Ordinary human visits are dropped; the first one from the site's own pages only marks the snippet as installed, which completes onboarding.
 3. **Report.** The dashboard reads Postgres directly through supabase-js. RLS scopes every query to the signed-in user, and one `crawler_stats()` SQL function returns every chart's data in a single round trip. There's no separate API server.
 
 ## Quick start
@@ -147,7 +153,7 @@ Local URLs:
 
 ## Install the tracker on your site
 
-On **Sites**, click **Add website**, then paste the one tag it gives you into the `<head>` of every page. Each site has its own page with the snippet, its status, and a separate place to remove it.
+Sign up and onboarding walks you through it: add your domain, paste the one tag it gives you into the `<head>` of every page, and open your site once. The dashboard unlocks as soon as the snippet reports in. Add more sites later from **Sites**; each one's snippet, CSV export and removal live in the dashboard's **Settings** view.
 
 ```html
 <script async src="https://<your-crawlradar>/t.js?s=<site-id>"></script>
@@ -155,7 +161,7 @@ On **Sites**, click **Add website**, then paste the one tag it gives you into th
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/install-dark.png">
-  <img alt="A site's page: the one-line snippet, install steps, details and removal" src="docs/images/install-light.png" width="720">
+  <img alt="Settings: the one-line snippet, the no-JavaScript pixel, CSV export, details and removal" src="docs/images/install-light.png" width="720">
 </picture>
 
 The site shows **"Last hit ..."** with a live dot as soon as the first event lands. Until then the dashboard listens with a live empty state, then switches to charts on its own.
@@ -163,37 +169,54 @@ The site shows **"Last hit ..."** with a live dot as soon as the first event lan
 <details>
 <summary>Optional: count crawlers that don't run JavaScript</summary>
 
-Most AI crawlers fetch HTML without running scripts. If you can add a second tag, put this right after `<body>`:
+Some crawlers fetch images but never run scripts. Settings has a **Pixel only** tab with a second tag for them:
 
 ```html
-<noscript><img src="https://<your-crawlradar>/api/collect?sid=<site-id>&t=img" alt="" width="1" height="1" style="position:absolute;left:-9999px"></noscript>
+<noscript
+  ><img
+    src="https://<your-crawlradar>/api/collect?t=img&sid=<site-id>"
+    alt=""
+    width="1"
+    height="1"
+    referrerpolicy="no-referrer-when-downgrade"
+/></noscript>
 ```
 
-Browsers send only your domain as the referrer for this image, so these hits may be recorded without a page path. Server-side tracking, which sees every request, is on the roadmap.
+Without a script, the page comes from the Referer header, which the `referrerpolicy` asks the browser to send in full. Server-side tracking, which sees every request, is on the roadmap.
+
+**Head or footer?** Both work, and `async` means neither blocks rendering. The `<head>` is better: it starts earlier, so it also catches crawlers that leave before the page finishes loading.
 
 </details>
 
 ## Security and privacy
 
-- **Accounts are isolated by the database itself.** Every query runs under Postgres row-level security as the signed-in user. Two people can add the same domain: each gets a separate site with a random ID, and neither can read, change or delete the other's data. [`security.test.sql`](supabase/tests/database/security.test.sql) proves this with 16 checks, and the end-to-end suite repeats it through the real app.
+- **Accounts are isolated by the database itself.** Every query runs under Postgres row-level security as the signed-in user. Two people can add the same domain: each gets a separate site with a random ID, and neither can read, change or delete the other's data. [`security.test.sql`](supabase/tests/database/security.test.sql) proves this with 21 checks, and the end-to-end suite repeats it through the real app.
 - **A copied snippet can't inject data.** Site IDs are visible in the snippet, so the tracking function only counts a hit when the page belongs to the site's domain (or a subdomain). Hits from anywhere else are dropped.
-- **Nothing personal is stored.** Only AI crawler hits and AI referrals are kept, IPs are stored as a SHA-256 hash with a salt that rotates daily, and the service-role key never leaves the Edge Function.
+- **Nothing personal is stored.** Only bot hits and AI referrals are kept, IPs are stored as a SHA-256 hash with a salt that rotates daily, and the service-role key never leaves the Edge Function.
 - **Shared links stay private.** A link to a private page sends signed-out visitors (and link-preview bots) to sign in. The preview describes the destination, like "AI crawler dashboard", without showing any data.
+- **The install check is safe.** Onboarding can fetch a site's home page to look for the tag; it only fetches public hostnames (no localhost, private names or IP addresses), with a timeout and a size cap.
 - **Site previews** on the Sites page come from public services (a screenshot from [Microlink](https://microlink.io) and a favicon from Google), which receive only the site's public domain name.
 
 ## Testing
 
-| Suite                     | Command                     | What it covers                                                                                                                                                                                      |
-| ------------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Suite                     | Command                     | What it covers                                                                                                                                                                                      |
-| ---                       | ---                         | ---                                                                                                                                                                                                 |
-| Lint and format (Biome)   | `pnpm lint` / `pnpm format` | Formatting, import order and lint rules across the whole repo                                                                                                                                       |
-| Unit (Vitest)             | `pnpm test`                 | Bot and referrer classifier, stats engine, CSV writer, filters, demo data, site activity, collect endpoint, Supabase client wiring                                                                  |
-| Coverage                  | `pnpm test:coverage`        | 100% of statements, branches, functions and lines in that code. CI fails below 100%                                                                                                                 |
-| End-to-end (Playwright)   | `pnpm test:e2e`             | Home page demo, sign-in redirects, filters, page and platform reports, CSV export, site switching, the full install journey, account isolation, snippet spoofing, social previews and phone layouts |
-| Database security (pgTAP) | `pnpm db:test`              | Row-level security between accounts: two users with the same domain, cross-account reads, writes, deletes and anonymous access                                                                      |
+| Suite                     | Command                     | What it covers                                                                                                                                                                                                                              |
+| ------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lint and format           | `pnpm lint` / `pnpm format` | Biome formatting, import order and lint rules, cognitive complexity of at most 10 per function, functions of at most 120 lines, and no hand-written source file over 200 lines                                                              |
+| Unit (Vitest)             | `pnpm test`                 | Bot, search-engine and referrer classifier (every listed bot), stats engine, pages and platform tables, CSV writer, install check, filters, demo data, collect endpoint                                                                     |
+| Coverage                  | `pnpm test:coverage`        | 100% of statements, branches, functions and lines in that code. CI fails below 100%                                                                                                                                                         |
+| End-to-end (Playwright)   | `pnpm test:e2e`             | Onboarding (locked app, five steps, resume), every dashboard view, filters, reports, pagination, CSV export, site switching and removal, account isolation, snippet spoofing, the home page and its demo, social previews and phone layouts |
+| Database security (pgTAP) | `pnpm db:test`              | Row-level security between accounts: two users with the same domain, cross-account reads, writes, renames, deletes and anonymous access                                                                                                     |
 
 End-to-end tests run against a production build and the local Supabase stack. Run `pnpm db:start` first.
+
+### Storybook
+
+Every app component (dashboard, onboarding, site settings, home sections) on the home page demo data, with a light/dark toggle in the toolbar. CI checks that it builds.
+
+```bash
+pnpm --filter @crawlradar/web storybook        # dev server on http://localhost:6006
+pnpm --filter @crawlradar/web build-storybook  # static build in apps/web/storybook-static
+```
 
 ## Deploy
 
@@ -226,25 +249,31 @@ The service-role key lives only inside the Edge Function. The dashboard never ne
 ```
 apps/web/                  Next.js 16 app (App Router, Server Components, Server Actions)
   app/page.tsx             home page with the interactive demo dashboard
-  app/(app)/               signed-in pages: /dashboard, /sites, /sites/[id], /export (CSV)
+  app/onboarding/          the five-step onboarding (the app is locked until it is done)
+  app/(app)/dashboard/     Overview, Platforms, Pages, Activity log and Settings views
+  app/(app)/sites/         all sites; /export streams CSV
   app/api/collect/         public collection endpoint, forwards to the track function
-  components/dashboard/    dashboard view, shared by the live app and the demo
-  lib/stats.ts             stats engine (TypeScript twin of crawler_stats(), used by the demo)
+  components/dashboard/    one small component per panel, shared by the live app and the demo
+  components/onboarding/   the stepper and each step
+  components/home/         home page sections
+  lib/stats/               stats engine (TypeScript twin of crawler_stats(), used by the demo)
   public/t.js              the tracker customers embed
+  .storybook/              Storybook for the app's components (*.stories.tsx next to each one)
 packages/ui/               @crawlradar/ui: shadcn/ui design system
 supabase/
-  migrations/              schema, RLS policies, crawler_stats()
+  migrations/              schema, RLS policies, crawler_stats(), crawler_pages()
   functions/track/         tracking function (Deno)
-  functions/_shared/       bot and referrer classifier
+  functions/_shared/       classifier: AI bots, search engines, AI referrers, isbot fallback
   seed.sql                 local demo user and 60 days of data
 e2e/                       Playwright tests
 scripts/simulate-bots.ts   send test crawler hits
+scripts/check-file-size.mjs  keeps every hand-written source file under 200 lines
 docs/PRD.md                product requirements and implementation notes
 ```
 
 ## Adding a bot
 
-Add one line to `BOT_PATTERNS` in [`supabase/functions/_shared/bots.ts`](supabase/functions/_shared/bots.ts), add a case in `bots.test.ts`, and run `pnpm test`. [Known Agents](https://knownagents.com/agents) keeps a good list of new agents. Pull requests are welcome.
+Add one line to [`ai-bots.ts`](supabase/functions/_shared/ai-bots.ts) (or [`search-engines.ts`](supabase/functions/_shared/search-engines.ts)): the user-agent token, the platform and the type. `pnpm test` checks that every entry classifies to itself. [ai.robots.txt](https://github.com/ai-robots-txt/ai.robots.txt) and [Known Agents](https://knownagents.com/agents) track new agents. Pull requests are welcome.
 
 ## Design decisions
 
@@ -253,7 +282,9 @@ Add one line to `BOT_PATTERNS` in [`supabase/functions/_shared/bots.ts`](supabas
 | One `<script src>` tag on your own domain             | Shortest install, a cacheable static tracker, and customers only see your domain                           | Inline loader pointing at `*.supabase.co` (longer, exposes the backend) |
 | `/api/collect` forwards to the Edge Function          | Ingest logic lives in one place, and the web host needs no service-role key                                | Inserting from a Next.js route (secret key in the web host)             |
 | User-Agent read on the server, beacon via a GET pixel | No CORS preflight, and page script can't fake the UA                                                       | `fetch`/`sendBeacon` POST with a JS-reported UA                         |
-| Only AI hits and referrals are stored                 | Keeps the free tier small and avoids storing personal browsing data                                        | Store everything and filter at query time                               |
+| Only bot hits and referrals are stored                | Keeps the free tier small and avoids storing personal browsing data                                        | Store everything and filter at query time                               |
+| A curated AI list, then `isbot` for any other bot     | Exact names, platforms and purposes for AI bots; a maintained library catches the rest                     | Only a generic bot/crawl/spider regex                                   |
+| Onboarding unlocks on the first real hit              | Proves the install works end to end, with no test data written to the account                              | A send-test-event button (fake data in the dashboard)                   |
 | Daily-salted SHA-256 IP hash                          | Groups visits within a day without storing an IP or tracking across days                                   | Raw IP; a static hash (reversible by brute force over IPv4)             |
 | No custom API: supabase-js, RLS and one SQL function  | Less code to run and secure; authorisation enforced in the database                                        | A separate API server; client-side aggregation (breaks past 1,000 rows) |
 | Stats engine mirrored in TypeScript                   | The home page demo runs the real dashboard on mock data, fully client-side, and the logic is unit-testable | A static screenshot                                                     |
