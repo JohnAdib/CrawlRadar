@@ -11,3 +11,5 @@ allowBuilds:
 overrides:
   # GHSA: minimatch < 11.0.1 (via shadcn > ts-morph); 11.x keeps the same API.
   minimatch: ^11.0.1
+  # GHSA: glob <= 14.0.1 (via Storybook's react-docgen plugin, dev only).
+  glob: ^14.0.2
