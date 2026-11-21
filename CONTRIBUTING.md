@@ -9,10 +9,10 @@ Follow the [quick start](README.md#quick-start). Either Supabase Cloud or the lo
 ## Before opening a pull request
 
 ```bash
-pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm build
+pnpm format && pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm build
 ```
 
-CI runs the same checks, requires 100% unit coverage, and runs the Playwright suite (`pnpm db:start`, then `pnpm test:e2e`). New logic in `apps/web/lib` needs tests.
+Formatting and linting use [Biome](https://biomejs.dev) (`biome.json`); `pnpm format` fixes most issues. CI runs the same checks, requires 100% unit coverage, and runs the Playwright suite (`pnpm db:start`, then `pnpm test:e2e`). New logic in `apps/web/lib` needs tests.
 
 - **Schema changes:** add a new file under `supabase/migrations/` (`pnpm exec supabase migration new <name>`). Never edit a migration that has already shipped. Then regenerate types with `pnpm exec supabase gen types typescript > apps/web/lib/database.types.ts`.
 - **New UI components:** add them to the shared design system with `pnpm dlx shadcn@latest add <component>` from `apps/web`. They land in `packages/ui`.

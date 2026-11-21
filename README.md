@@ -8,6 +8,7 @@ See which AI crawlers (GPTBot, ClaudeBot, PerplexityBot and more) read your site
 [![CI](https://github.com/JohnAdib/CrawlRadar/actions/workflows/ci.yml/badge.svg)](https://github.com/JohnAdib/CrawlRadar/actions/workflows/ci.yml)
 [![Coverage: 100%](https://img.shields.io/badge/coverage-100%25-brightgreen)](#testing)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Biome](https://img.shields.io/badge/lint-Biome-60a5fa)](https://biomejs.dev)
 ![Next.js 16](https://img.shields.io/badge/Next.js-16-black)
 ![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%C2%B7%20Auth%20%C2%B7%20Edge-3ecf8e)
 
@@ -62,11 +63,11 @@ flowchart LR
 
 The dashboard is plain Node.js. The only other piece is a Supabase backend. Choose one:
 
-| | Option A: Supabase Cloud | Option B: fully local |
-| --- | --- | --- |
-| Needs | A free [supabase.com](https://supabase.com) account | [Docker](https://www.docker.com/) |
-| Demo data | No (send test hits instead) | Yes, 30 days preloaded |
-| Best for | Trying it fast, or deploying | Offline development, running tests |
+|           | Option A: Supabase Cloud                            | Option B: fully local              |
+| --------- | --------------------------------------------------- | ---------------------------------- |
+| Needs     | A free [supabase.com](https://supabase.com) account | [Docker](https://www.docker.com/)  |
+| Demo data | No (send test hits instead)                         | Yes, 60 days preloaded             |
+| Best for  | Trying it fast, or deploying                        | Offline development, running tests |
 
 First, get the code:
 
@@ -138,23 +139,26 @@ pnpm install
 
 Local URLs:
 
-| URL | What |
-| --- | --- |
-| http://localhost:3000 | Home page and dashboard |
-| http://127.0.0.1:54323 | Supabase Studio (browse tables) |
-| http://127.0.0.1:54321/functions/v1/track | Tracking function |
+| URL                                       | What                            |
+| ----------------------------------------- | ------------------------------- |
+| http://localhost:3000                     | Home page and dashboard         |
+| http://127.0.0.1:54323                    | Supabase Studio (browse tables) |
+| http://127.0.0.1:54321/functions/v1/track | Tracking function               |
 
 ## Install the tracker on your site
 
-On **Sites**, click **Add website**, then paste the one tag it gives you into the `<head>` of every page:
+On **Sites**, click **Add website**, then paste the one tag it gives you into the `<head>` of every page. Each site has its own page with the snippet, its status, and a separate place to remove it.
 
 ```html
 <script async src="https://<your-crawlradar>/t.js?s=<site-id>"></script>
 ```
 
-<img alt="Sites page with the one-line snippet" src="docs/images/install.png" width="800">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/install-dark.png">
+  <img alt="A site's page: the one-line snippet, install steps, details and removal" src="docs/images/install-light.png" width="720">
+</picture>
 
-The site shows **"Last hit ..."** as soon as the first event lands. The dashboard listens with a live empty state, then switches to charts on its own.
+The site shows **"Last hit ..."** with a live dot as soon as the first event lands. Until then the dashboard listens with a live empty state, then switches to charts on its own.
 
 <details>
 <summary>Optional: count crawlers that don't run JavaScript</summary>
@@ -171,11 +175,14 @@ Browsers send only your domain as the referrer for this image, so these hits may
 
 ## Testing
 
-| Suite | Command | What it covers |
-| --- | --- | --- |
-| Unit (Vitest) | `pnpm test` | Bot and referrer classifier, stats engine, CSV writer, filters, demo data, collect endpoint, Supabase client wiring |
-| Coverage | `pnpm test:coverage` | 100% of statements, branches, functions and lines in that code. CI fails below 100% |
-| End-to-end (Playwright) | `pnpm test:e2e` | Home page demo, sign in/out, dashboard filters and CSV export, the full install journey (sign up, add site, snippet, live hits) and phone layouts |
+| Suite                   | Command                     | What it covers                                                                                                                                                                                        |
+| ----------------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Suite                   | Command                     | What it covers                                                                                                                                                                                        |
+| ---                     | ---                         | ---                                                                                                                                                                                                   |
+| Lint and format (Biome) | `pnpm lint` / `pnpm format` | Formatting, import order and lint rules across the whole repo                                                                                                                                         |
+| Unit (Vitest)           | `pnpm test`                 | Bot and referrer classifier, stats engine, CSV writer, filters, demo data, site activity, collect endpoint, Supabase client wiring                                                                    |
+| Coverage                | `pnpm test:coverage`        | 100% of statements, branches, functions and lines in that code. CI fails below 100%                                                                                                                   |
+| End-to-end (Playwright) | `pnpm test:e2e`             | Home page demo, sign in/out, filters and CSV export, switching between sites (including one with no data), the full install journey (sign up, add site, snippet, live hits, remove) and phone layouts |
 
 End-to-end tests run against a production build and the local Supabase stack. Run `pnpm db:start` first.
 
@@ -198,10 +205,10 @@ End-to-end tests run against a production build and the local Supabase stack. Ru
 
 Set **Root Directory** to `apps/web` and add two environment variables from **Project Settings > API**:
 
-| Variable | Value |
-| --- | --- |
-| `NEXT_PUBLIC_SUPABASE_URL` | `https://<project-ref>.supabase.co` |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | the publishable key |
+| Variable                               | Value                               |
+| -------------------------------------- | ----------------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`             | `https://<project-ref>.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | the publishable key                 |
 
 The service-role key lives only inside the Edge Function. The dashboard never needs it.
 
@@ -210,7 +217,7 @@ The service-role key lives only inside the Edge Function. The dashboard never ne
 ```
 apps/web/                  Next.js 16 app (App Router, Server Components, Server Actions)
   app/page.tsx             home page with the interactive demo dashboard
-  app/(app)/               signed-in pages: /dashboard, /sites, /export (CSV)
+  app/(app)/               signed-in pages: /dashboard, /sites, /sites/[id], /export (CSV)
   app/api/collect/         public collection endpoint, forwards to the track function
   components/dashboard/    dashboard view, shared by the live app and the demo
   lib/stats.ts             stats engine (TypeScript twin of crawler_stats(), used by the demo)
@@ -220,7 +227,7 @@ supabase/
   migrations/              schema, RLS policies, crawler_stats()
   functions/track/         tracking function (Deno)
   functions/_shared/       bot and referrer classifier
-  seed.sql                 local demo user and 30 days of data
+  seed.sql                 local demo user and 60 days of data
 e2e/                       Playwright tests
 scripts/simulate-bots.ts   send test crawler hits
 docs/PRD.md                product requirements and implementation notes
@@ -232,16 +239,16 @@ Add one line to `BOT_PATTERNS` in [`supabase/functions/_shared/bots.ts`](supabas
 
 ## Design decisions
 
-| Decision | Why | Considered instead |
-| --- | --- | --- |
-| One `<script src>` tag on your own domain | Shortest install, a cacheable static tracker, and customers only see your domain | Inline loader pointing at `*.supabase.co` (longer, exposes the backend) |
-| `/api/collect` forwards to the Edge Function | Ingest logic lives in one place, and the web host needs no service-role key | Inserting from a Next.js route (secret key in the web host) |
-| User-Agent read on the server, beacon via a GET pixel | No CORS preflight, and page script can't fake the UA | `fetch`/`sendBeacon` POST with a JS-reported UA |
-| Only AI hits and referrals are stored | Keeps the free tier small and avoids storing personal browsing data | Store everything and filter at query time |
-| Daily-salted SHA-256 IP hash | Groups visits within a day without storing an IP or tracking across days | Raw IP; a static hash (reversible by brute force over IPv4) |
-| No custom API: supabase-js, RLS and one SQL function | Less code to run and secure; authorisation enforced in the database | A separate API server; client-side aggregation (breaks past 1,000 rows) |
-| Stats engine mirrored in TypeScript | The home page demo runs the real dashboard on mock data, fully client-side, and the logic is unit-testable | A static screenshot |
-| Monorepo with a shared `@crawlradar/ui` | shadcn's official monorepo layout; room for `apps/api` or docs later | A single app |
+| Decision                                              | Why                                                                                                        | Considered instead                                                      |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| One `<script src>` tag on your own domain             | Shortest install, a cacheable static tracker, and customers only see your domain                           | Inline loader pointing at `*.supabase.co` (longer, exposes the backend) |
+| `/api/collect` forwards to the Edge Function          | Ingest logic lives in one place, and the web host needs no service-role key                                | Inserting from a Next.js route (secret key in the web host)             |
+| User-Agent read on the server, beacon via a GET pixel | No CORS preflight, and page script can't fake the UA                                                       | `fetch`/`sendBeacon` POST with a JS-reported UA                         |
+| Only AI hits and referrals are stored                 | Keeps the free tier small and avoids storing personal browsing data                                        | Store everything and filter at query time                               |
+| Daily-salted SHA-256 IP hash                          | Groups visits within a day without storing an IP or tracking across days                                   | Raw IP; a static hash (reversible by brute force over IPv4)             |
+| No custom API: supabase-js, RLS and one SQL function  | Less code to run and secure; authorisation enforced in the database                                        | A separate API server; client-side aggregation (breaks past 1,000 rows) |
+| Stats engine mirrored in TypeScript                   | The home page demo runs the real dashboard on mock data, fully client-side, and the logic is unit-testable | A static screenshot                                                     |
+| Monorepo with a shared `@crawlradar/ui`               | shadcn's official monorepo layout; room for `apps/api` or docs later                                       | A single app                                                            |
 
 ## Limitations
 
