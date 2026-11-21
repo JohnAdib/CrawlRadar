@@ -1,25 +1,15 @@
 import type { NextRequest } from "next/server"
 
-import { toCsv } from "@/lib/csv"
+import { CSV_HEADER, csvRows, type ExportEvent } from "@/lib/csv"
 import { type Filters, parseFilters, sinceFor } from "@/lib/filters"
 import { createClient } from "@/lib/supabase/server"
 
-// PRD appendix columns first, then the remaining fields.
-const COLUMNS = [
-  "timestamp",
-  "page_url",
-  "bot_name",
-  "platform",
-  "bot_type",
-  "user_agent",
-  "page_path",
-  "referrer",
-  "ip_hash",
-] as const
+// Everything the PRD appendix format needs (page_path is written in the page_url column).
+const COLUMNS =
+  "timestamp, page_url, page_path, bot_name, platform, bot_type, user_agent"
 const PAGE = 1000 // PostgREST's default max rows per request
 
 type Client = Awaited<ReturnType<typeof createClient>>
-type Row = Record<(typeof COLUMNS)[number], unknown>
 
 /** One page of events, newest first, with the export's filters applied. */
 function eventsPage(
@@ -31,7 +21,7 @@ function eventsPage(
 ) {
   let query = supabase
     .from("crawler_events")
-    .select(COLUMNS.join(","))
+    .select(COLUMNS)
     .eq("site_id", siteId)
     .order("timestamp", { ascending: false })
     .range(from, from + PAGE - 1)
@@ -39,12 +29,13 @@ function eventsPage(
   if (filters.platform) query = query.eq("platform", filters.platform)
   if (filters.type) query = query.eq("bot_type", filters.type)
   if (filters.page) query = query.eq("page_path", filters.page)
-  return query.overrideTypes<Row[]>()
+  return query.overrideTypes<ExportEvent[]>()
 }
 
 /**
  * GET /export?site=<id>[&range=7d&platform=OpenAI&type=training]
- * Without `range` it exports the site's full history. RLS limits it to the caller's own sites.
+ * CSV in the PRD appendix format. Without `range` it exports the site's full history.
+ * RLS limits it to the caller's own sites.
  */
 export async function GET(request: NextRequest) {
   const params = Object.fromEntries(request.nextUrl.searchParams)
@@ -59,7 +50,7 @@ export async function GET(request: NextRequest) {
   if (!site) return new Response("Site not found", { status: 404 })
 
   const since = params.range ? sinceFor(filters.range) : null
-  let csv = toCsv(COLUMNS, [])
+  let csv = CSV_HEADER
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await eventsPage(
       supabase,
@@ -69,7 +60,7 @@ export async function GET(request: NextRequest) {
       from
     )
     if (error) return new Response(error.message, { status: 500 })
-    csv += toCsv(COLUMNS, data, false)
+    csv += csvRows(data)
     if (data.length < PAGE) break
   }
 
