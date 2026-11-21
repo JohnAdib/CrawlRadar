@@ -11,21 +11,55 @@ import { Field, FieldGroup, FieldLabel } from "@crawlradar/ui/components/field"
 import { Input } from "@crawlradar/ui/components/input"
 import { CircleAlert } from "lucide-react"
 
+import type { Metadata } from "next"
 import Link from "next/link"
 
 import { LoginButtons } from "@/components/login-buttons"
 import { Logo } from "@/components/logo"
+import { ogImage, privatePagePreview, safeNext } from "@/lib/seo"
 import { SUPABASE_URL } from "@/lib/supabase/server"
 import { signIn, signUp } from "./actions"
 
 const isLocal = /127\.0\.0\.1|localhost/.test(SUPABASE_URL)
 
+type Params = Promise<{ error?: string; next?: string }>
+
+// Shared links to private pages land here for anyone signed out, including link-preview
+// crawlers. The preview describes where the link goes, without revealing any data.
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Params
+}): Promise<Metadata> {
+  const { next } = await searchParams
+  const { title, description } = privatePagePreview(next)
+  const image = ogImage(title, description)
+  return {
+    title,
+    description,
+    alternates: { canonical: "/login" },
+    robots: next ? { index: false } : undefined,
+    openGraph: {
+      title: `${title} · CrawlRadar`,
+      description,
+      url: next ? `/login?next=${encodeURIComponent(next)}` : "/login",
+      images: [{ url: image, width: 1200, height: 630, alt: title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${title} · CrawlRadar`,
+      description,
+      images: [image],
+    },
+  }
+}
+
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>
+  searchParams: Params
 }) {
-  const { error } = await searchParams
+  const { error, next } = await searchParams
 
   return (
     <main className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted/40 p-6">
@@ -41,6 +75,7 @@ export default async function LoginPage({
           </CardDescription>
         </CardHeader>
         <form>
+          <input type="hidden" name="next" value={safeNext(next)} />
           <CardContent>
             <FieldGroup>
               {error && (

@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation"
 
+import { safeNext } from "@/lib/seo"
 import { createClient } from "@/lib/supabase/server"
 
 function credentials(form: FormData) {
@@ -11,25 +12,35 @@ function credentials(form: FormData) {
   }
 }
 
-function fail(message: string): never {
-  redirect(`/login?error=${encodeURIComponent(message)}`)
+function nextOf(form: FormData): string | null {
+  const next = form.get("next")
+  return typeof next === "string" ? next : null
+}
+
+function fail(message: string, form: FormData): never {
+  const next = nextOf(form)
+  const query = new URLSearchParams({ error: message })
+  if (next) query.set("next", safeNext(next))
+  redirect(`/login?${query}`)
 }
 
 export async function signIn(form: FormData) {
   const supabase = await createClient()
   const { error } = await supabase.auth.signInWithPassword(credentials(form))
-  if (error) fail(error.message)
-  redirect("/dashboard")
+  if (error) fail(error.message, form)
+  redirect(safeNext(nextOf(form)))
 }
 
 export async function signUp(form: FormData) {
   const supabase = await createClient()
   const { data, error } = await supabase.auth.signUp(credentials(form))
-  if (error) fail(error.message)
+  if (error) fail(error.message, form)
   // Projects with email confirmation on return no session until the link is clicked.
   if (!data.session)
-    fail("Check your inbox to confirm your email, then sign in.")
-  redirect("/sites")
+    fail("Check your inbox to confirm your email, then sign in.", form)
+  // New accounts start by adding a site, unless they followed a link somewhere.
+  const next = nextOf(form)
+  redirect(next && next !== "/dashboard" ? safeNext(next) : "/sites")
 }
 
 export async function signOut() {

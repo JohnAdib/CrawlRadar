@@ -12,7 +12,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@crawlradar/ui/components/empty"
-import { ChevronRight, Globe } from "lucide-react"
+import { ChevronRight } from "lucide-react"
 import type { Metadata } from "next"
 import Link from "next/link"
 
@@ -20,12 +20,16 @@ import { AddSiteButton } from "@/components/add-site-dialog"
 import { Animation } from "@/components/animation"
 import { Tag } from "@/components/head-tag"
 import { PageHeader } from "@/components/page-header"
+import { Favicon, SitePreview } from "@/components/site-preview"
 import { SiteStatus } from "@/components/site-status"
 import { visits } from "@/lib/format"
 import { siteActivity } from "@/lib/sites"
 import { createClient } from "@/lib/supabase/server"
 
-export const metadata: Metadata = { title: "Sites · CrawlRadar" }
+export const metadata: Metadata = {
+  title: "Sites",
+  robots: { index: false },
+}
 
 export default async function SitesPage() {
   const supabase = await createClient()
@@ -80,16 +84,17 @@ export default async function SitesPage() {
               href={`/sites/${site.id}`}
               className="group block h-full rounded-xl focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
             >
-              <Card className="h-full transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-foreground/20 group-hover:shadow-md">
-                <CardHeader className="gap-3">
+              <Card className="h-full gap-0 overflow-hidden py-0 transition-[border-color,box-shadow] duration-200 group-hover:border-foreground/25 group-hover:shadow-lg">
+                <SitePreview domain={site.domain} className="border-b" />
+                <CardHeader className="gap-3 py-5">
                   <div className="flex items-center gap-3">
-                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-                      <Globe className="size-4" />
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-background">
+                      <Favicon domain={site.domain} />
                     </span>
                     <CardTitle className="min-w-0 flex-1 truncate">
                       {site.domain}
                     </CardTitle>
-                    <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                    <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground" />
                   </div>
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <SiteStatus lastSeen={activity[i]!.lastSeen} />

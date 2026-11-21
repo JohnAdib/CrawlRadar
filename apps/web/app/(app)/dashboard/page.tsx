@@ -25,7 +25,10 @@ import { appOrigin, snippet } from "@/lib/snippet"
 import type { Stats } from "@/lib/stats"
 import { createClient } from "@/lib/supabase/server"
 
-export const metadata: Metadata = { title: "Dashboard · CrawlRadar" }
+export const metadata: Metadata = {
+  title: "Dashboard",
+  robots: { index: false },
+}
 
 export default async function DashboardPage({
   searchParams,
@@ -50,9 +53,10 @@ export default async function DashboardPage({
     .eq("site_id", site.id)
     .gte("timestamp", since)
     .order("timestamp", { ascending: false })
-    .limit(12)
+    .limit(10)
   if (filters.platform) recent = recent.eq("platform", filters.platform)
   if (filters.type) recent = recent.eq("bot_type", filters.type)
+  if (filters.page) recent = recent.eq("page_path", filters.page)
 
   const [statsRes, recentRes] = await Promise.all([
     supabase.rpc("crawler_stats", {
@@ -60,6 +64,7 @@ export default async function DashboardPage({
       p_since: since,
       p_platform: filters.platform,
       p_bot_type: filters.type,
+      p_page_path: filters.page,
     }),
     recent,
   ])

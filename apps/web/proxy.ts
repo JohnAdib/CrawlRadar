@@ -1,6 +1,8 @@
 import { createServerClient } from "@supabase/ssr"
 import { type NextRequest, NextResponse } from "next/server"
 
+import { safeNext } from "@/lib/seo"
+
 // Refreshes the Supabase session cookie and gates the signed-in app.
 // The home page, /t.js and /api/collect stay public (see `matcher`).
 export async function proxy(request: NextRequest) {
@@ -28,11 +30,17 @@ export async function proxy(request: NextRequest) {
 
   if (path === "/") return response
   if (path.startsWith("/login")) {
+    const next = request.nextUrl.searchParams.get("next")
     return signedIn
-      ? NextResponse.redirect(new URL("/dashboard", request.url))
+      ? NextResponse.redirect(new URL(safeNext(next), request.url))
       : response
   }
-  if (!signedIn) return NextResponse.redirect(new URL("/login", request.url))
+  if (!signedIn) {
+    // Remember where the link pointed, so sign-in (and link previews) can use it.
+    const login = new URL("/login", request.url)
+    login.searchParams.set("next", path + request.nextUrl.search)
+    return NextResponse.redirect(login)
+  }
   return response
 }
 
