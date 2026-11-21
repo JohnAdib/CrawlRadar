@@ -8,10 +8,11 @@
     "lint": "turbo lint",
     "format": "turbo format",
     "typecheck": "turbo typecheck",
-    "test": "node --test supabase/functions/_shared/*.test.ts",
+    "test": "node --test supabase/functions/_shared/*.test.ts apps/web/lib/*.test.ts",
     "db:start": "supabase start",
     "db:reset": "supabase db reset",
-    "db:stop": "supabase stop"
+    "db:stop": "supabase stop",
+    "simulate": "node scripts/simulate-bots.ts"
   },
   "devDependencies": {
     "@crawlradar/eslint-config": "workspace:*",
@@ -25,5 +26,6 @@
   "packageManager": "pnpm@11.25.0",
   "engines": {
     "node": ">=20.9.0"
-  }
+  },
+  "type": "module"
 }
