@@ -65,7 +65,9 @@ test("every page has a title, description and social preview", async ({
     .locator('meta[property="og:image"]')
     .getAttribute("content")
   expect(og).toContain("/api/og")
-  const image = await request.get(og!)
+  // The tag holds an absolute URL for the configured site; fetch its path from this server.
+  const { pathname, search } = new URL(og!)
+  const image = await request.get(pathname + search)
   expect(image.headers()["content-type"]).toBe("image/png")
 
   // A shared link to a private page previews its destination, not the user's data.
