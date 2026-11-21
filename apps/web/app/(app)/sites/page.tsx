@@ -18,7 +18,7 @@ import {
 import { Globe } from "lucide-react"
 import type { Metadata } from "next"
 
-import { AddSiteDialog } from "@/components/add-site-dialog"
+import { AddSiteButton } from "@/components/add-site-dialog"
 import { Animation } from "@/components/animation"
 import { CopyBlock } from "@/components/copy-block"
 import { PageHeader } from "@/components/page-header"
@@ -63,7 +63,7 @@ export default async function SitesPage() {
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
-          <AddSiteDialog origin={origin} size="lg" />
+          <AddSiteButton size="lg" />
         </EmptyContent>
       </Empty>
     )
@@ -74,7 +74,7 @@ export default async function SitesPage() {
       <PageHeader
         title="Sites"
         description="Paste a site's snippet into the <head> of every page. That's the whole install."
-        action={<AddSiteDialog origin={origin} />}
+        action={<AddSiteButton />}
       />
 
       <div className="grid gap-4">

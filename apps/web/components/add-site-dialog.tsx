@@ -8,7 +8,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@crawlradar/ui/components/dialog"
 import { Field, FieldError, FieldLabel } from "@crawlradar/ui/components/field"
 import {
@@ -19,46 +18,62 @@ import {
 } from "@crawlradar/ui/components/input-group"
 import { Spinner } from "@crawlradar/ui/components/spinner"
 import { Plus } from "lucide-react"
-import { useActionState, useState } from "react"
+import { createContext, useActionState, useContext, useState } from "react"
 
 import { type AddSiteState, addSite } from "@/app/(app)/sites/actions"
 import { Animation } from "@/components/animation"
 import { CopyBlock } from "@/components/copy-block"
 
-export function AddSiteDialog({
+const OpenAddSite = createContext<() => void>(() => {})
+
+/**
+ * Owns the single "Add website" dialog. It lives in the sites layout, so it stays
+ * mounted (and keeps showing the success step) when adding the first site swaps the
+ * page from its empty state to the site list.
+ */
+export function AddSiteProvider({
   origin,
-  label = "Add website",
-  size = "default",
+  children,
 }: {
   origin: string
-  label?: string
-  size?: "default" | "lg"
+  children: React.ReactNode
 }) {
   const [open, setOpen] = useState(false)
   // Remounting the form on every open resets its state and input.
   const [formKey, setFormKey] = useState(0)
+  const openDialog = () => {
+    setFormKey((k) => k + 1)
+    setOpen(true)
+  }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        setOpen(next)
-        if (next) setFormKey((k) => k + 1)
-      }}
-    >
-      <DialogTrigger asChild>
-        <Button size={size}>
-          <Plus /> {label}
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <AddSiteForm
-          key={formKey}
-          origin={origin}
-          onDone={() => setOpen(false)}
-        />
-      </DialogContent>
-    </Dialog>
+    <OpenAddSite.Provider value={openDialog}>
+      {children}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-md">
+          <AddSiteForm
+            key={formKey}
+            origin={origin}
+            onDone={() => setOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
+    </OpenAddSite.Provider>
+  )
+}
+
+export function AddSiteButton({
+  label = "Add website",
+  size = "default",
+}: {
+  label?: string
+  size?: "default" | "lg"
+}) {
+  const open = useContext(OpenAddSite)
+  return (
+    <Button size={size} onClick={open}>
+      <Plus /> {label}
+    </Button>
   )
 }
 
