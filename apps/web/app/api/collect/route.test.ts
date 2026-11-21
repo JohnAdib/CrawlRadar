@@ -2,7 +2,7 @@ import { NextRequest } from "next/server"
 import { afterEach, expect, test, vi } from "vitest"
 
 vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "http://supabase.test")
-const { GET } = await import("./route")
+const { GET, POST } = await import("./route")
 
 const fetchMock = vi.fn(async () => new Response(""))
 vi.stubGlobal("fetch", fetchMock)
@@ -61,4 +61,29 @@ test("still answers when the tracking backend is down", async () => {
   expect(res.status).toBe(200)
   expect(error).toHaveBeenCalled()
   error.mockRestore()
+})
+
+test("relays a beacon POST with its body as a POST, and answers 204", async () => {
+  const body = "sid=abc&u=https%3A%2F%2Fsite.test%2Fpricing&r="
+  const res = await POST(
+    new NextRequest("http://app.test/api/collect", {
+      method: "POST",
+      body,
+      headers: { "user-agent": "GPTBot/1.2", "content-type": "text/plain" },
+    })
+  )
+  expect(fetchMock).toHaveBeenCalledWith(
+    "http://supabase.test/functions/v1/track",
+    {
+      method: "POST",
+      headers: {
+        "user-agent": "GPTBot/1.2",
+        "content-type": "application/x-www-form-urlencoded",
+      },
+      body,
+      cache: "no-store",
+    }
+  )
+  expect(res.status).toBe(204)
+  expect(res.headers.get("access-control-allow-origin")).toBe("*")
 })

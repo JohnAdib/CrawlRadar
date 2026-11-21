@@ -1,9 +1,10 @@
-// Tracking endpoint. Called by the site snippet as a <script> (JS-capable visitors)
-// or as a <noscript> <img> pixel (crawlers that don't run JavaScript).
+// Tracking endpoint. The JavaScript tag POSTs each hit as a beacon (form-encoded body);
+// the pixel, and the script where beacons aren't available, send the same fields as a GET:
 //
-//   GET /functions/v1/track?sid=<site id>&u=<page url>&r=<document.referrer>[&t=img]
+//   POST /functions/v1/track          body: sid=<site id>&u=<page url>&r=<document.referrer>
+//   GET  /functions/v1/track?sid=…&u=…&r=…&t=img
 //
-// The User-Agent is read from the request header, never from the query string, so a page
+// The User-Agent is read from the request header, never from the payload, so a page
 // script can't fake it. Ordinary human visits are classified as null and not stored.
 import { createClient } from "npm:@supabase/supabase-js@2"
 import { classify } from "../_shared/bots.ts"
@@ -83,26 +84,31 @@ function pathOf(url: string): string | null {
   }
 }
 
+/** The hit's fields: the POST body, or the query string for GET. */
+async function fieldsOf(req: Request, url: URL): Promise<URLSearchParams> {
+  if (req.method !== "POST") return url.searchParams
+  return new URLSearchParams((await req.text()).slice(0, 8000))
+}
+
 /** The hit's inputs, length-capped, or null when the request is unusable. */
-function readHit(req: Request, url: URL) {
-  const sid = url.searchParams.get("sid") ?? ""
+function readHit(req: Request, fields: URLSearchParams) {
+  const sid = fields.get("sid") ?? ""
   // Script/img requests carry the embedding page as Referer; `u` is the explicit fallback.
-  const pageUrl = (
-    url.searchParams.get("u") ||
-    req.headers.get("referer") ||
-    ""
-  ).slice(0, 2000)
+  const pageUrl = (fields.get("u") || req.headers.get("referer") || "").slice(
+    0,
+    2000
+  )
   if (!UUID.test(sid) || !pageUrl) return null
   return {
     sid,
     pageUrl,
     userAgent: (req.headers.get("user-agent") ?? "").slice(0, 1000),
-    referrer: url.searchParams.get("r")?.slice(0, 2000) || null,
+    referrer: fields.get("r")?.slice(0, 2000) || null,
   }
 }
 
 async function record(req: Request, url: URL): Promise<void> {
-  const input = readHit(req, url)
+  const input = readHit(req, await fieldsOf(req, url))
   if (!input) return
   const { sid, pageUrl, userAgent, referrer } = input
 
@@ -137,6 +143,8 @@ Deno.serve(async (req) => {
   } catch (err) {
     console.error(err)
   }
+  if (req.method === "POST")
+    return new Response(null, { status: 204, headers: NO_CACHE })
   return url.searchParams.get("t") === "img"
     ? new Response(GIF, {
         headers: { ...NO_CACHE, "content-type": "image/gif" },
