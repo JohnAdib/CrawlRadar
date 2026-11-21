@@ -24,6 +24,8 @@ export interface Filters {
   range: Range
   platform?: string
   type?: BotType
+  /** A single page path, for the per-page report. */
+  page?: string
 }
 
 type Params = Record<string, string | string[] | undefined>
@@ -40,6 +42,7 @@ export function parseFilters(params: Params): Filters {
     range: range && range in RANGES ? (range as Range) : "7d",
     platform: one(params.platform),
     type: type && type in BOT_TYPES ? (type as BotType) : undefined,
+    page: one(params.page),
   }
 }
 

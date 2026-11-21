@@ -150,6 +150,17 @@ describe("computeStats", () => {
     expect(referrals.referrals).toBe(2)
   })
 
+  test("applies the page filter (page reports)", () => {
+    const pricing = computeStats(EVENTS, { ...week, page: "/pricing" })
+    expect(pricing.total).toBe(2)
+    expect(pricing.top_pages).toEqual([{ page_path: "/pricing", visits: 2 }])
+    expect(
+      recentEvents(EVENTS, { ...week, page: "/pricing" }).map(
+        (e) => e.page_path
+      )
+    ).toEqual(["/pricing", "/pricing"])
+  })
+
   test("ignores events newer than the last bucket and handles unknown pages", () => {
     const stats = computeStats(
       [event(-48), event(1, { page_path: null })],

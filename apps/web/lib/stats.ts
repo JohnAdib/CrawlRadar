@@ -54,6 +54,7 @@ export interface StatsOptions {
   now: Date
   platform?: string
   type?: BotType
+  page?: string
 }
 
 const HOUR = 3_600_000
@@ -100,7 +101,8 @@ export function computeStats(
   const matching = events.filter(
     (e) =>
       (!options.platform || e.platform === options.platform) &&
-      (!options.type || e.bot_type === options.type)
+      (!options.type || e.bot_type === options.type) &&
+      (!options.page || e.page_path === options.page)
   )
   const current = matching.filter((e) => time(e) >= since)
   const previous = matching.filter(
@@ -208,7 +210,8 @@ export function recentEvents(
       (e) =>
         new Date(e.timestamp).getTime() >= since &&
         (!options.platform || e.platform === options.platform) &&
-        (!options.type || e.bot_type === options.type)
+        (!options.type || e.bot_type === options.type) &&
+        (!options.page || e.page_path === options.page)
     )
     .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
     .slice(0, limit)

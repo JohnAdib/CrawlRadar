@@ -19,7 +19,7 @@ values (
 );
 
 insert into public.sites (id, user_id, domain)
-values ('22222222-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111111', 'demo.crawlradar.dev');
+values ('22222222-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111111', 'crawlradar.vercel.app');
 
 with bots (bot_name, platform, bot_type, user_agent, referrer, w) as (
   values
@@ -49,7 +49,7 @@ select
   '22222222-2222-2222-2222-222222222222',
   now() - power(random(), 1.6) * interval '60 days',
   b.user_agent, b.bot_name, b.platform, b.bot_type,
-  'https://demo.crawlradar.dev' || p.page_path, p.page_path, b.referrer,
+  'https://crawlradar.vercel.app' || p.page_path, p.page_path, b.referrer,
   md5(random()::text) || md5(random()::text)
 from generate_series(1, 5000) g
 -- weighted random pick per row (exponential trick); `g > 0` makes the subquery re-run per row
