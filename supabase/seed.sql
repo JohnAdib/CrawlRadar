@@ -1,5 +1,5 @@
 -- Local demo data. Runs on `supabase db reset` (local only, never in production).
--- Demo login: demo@crawlradar.dev / crawlradar-demo
+-- Demo login: demo@crawlradar.dev / crawlradar-demo (60 days of data, so every range has a previous period)
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -47,11 +47,11 @@ pages (page_path, w) as (
 insert into public.crawler_events (site_id, "timestamp", user_agent, bot_name, platform, bot_type, page_url, page_path, referrer, ip_hash)
 select
   '22222222-2222-2222-2222-222222222222',
-  now() - power(random(), 1.6) * interval '30 days',
+  now() - power(random(), 1.6) * interval '60 days',
   b.user_agent, b.bot_name, b.platform, b.bot_type,
   'https://demo.crawlradar.dev' || p.page_path, p.page_path, b.referrer,
   md5(random()::text) || md5(random()::text)
-from generate_series(1, 3000) g
+from generate_series(1, 5000) g
 -- weighted random pick per row (exponential trick); `g > 0` makes the subquery re-run per row
 cross join lateral (select * from bots where g > 0 order by -ln(random()) / w limit 1) b
 cross join lateral (select * from pages where g > 0 order by -ln(random()) / w limit 1) p;
