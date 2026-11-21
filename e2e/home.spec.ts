@@ -42,9 +42,46 @@ test("the demo dashboard on the home page is interactive", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Get started" })).toBeVisible()
 })
 
-test("signed-out visitors are sent to sign in", async ({ page }) => {
+test("signed-out visitors are sent to sign in, then on to where they were going", async ({
+  page,
+}) => {
   await page.goto("/dashboard")
-  await expect(page).toHaveURL(/\/login/)
+  await expect(page).toHaveURL(/\/login\?next=%2Fdashboard/)
   await page.goto("/sites")
-  await expect(page).toHaveURL(/\/login/)
+  await expect(page).toHaveURL(/\/login\?next=%2Fsites/)
+  await page.getByLabel("Email").fill("demo@crawlradar.dev")
+  await page.getByLabel("Password").fill("crawlradar-demo")
+  await page.getByRole("button", { name: "Sign in" }).click()
+  await expect(page).toHaveURL(/\/sites$/)
+})
+
+test("every page has a title, description and social preview", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/")
+  await expect(page).toHaveTitle(/CrawlRadar/)
+  const og = await page
+    .locator('meta[property="og:image"]')
+    .getAttribute("content")
+  expect(og).toContain("/api/og")
+  const image = await request.get(og!)
+  expect(image.headers()["content-type"]).toBe("image/png")
+
+  // A shared link to a private page previews its destination, not the user's data.
+  await page.goto("/login?next=%2Fdashboard")
+  await expect(page).toHaveTitle("AI crawler dashboard · CrawlRadar")
+  await expect(page.locator('meta[property="og:description"]')).toHaveAttribute(
+    "content",
+    /Sign in to see/
+  )
+
+  for (const path of [
+    "/robots.txt",
+    "/sitemap.xml",
+    "/manifest.webmanifest",
+    "/icon.svg",
+  ]) {
+    expect((await request.get(path)).ok()).toBe(true)
+  }
 })

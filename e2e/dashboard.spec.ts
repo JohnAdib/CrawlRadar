@@ -25,11 +25,35 @@ test("shows the demo site's crawler activity", async ({ page }) => {
 test("filters are kept in the URL", async ({ page }) => {
   await page.getByRole("radio", { name: "Last 30 days" }).click()
   await expect(page).toHaveURL(/range=30d/)
-  await page.getByRole("combobox", { name: "Bot type" }).click()
-  await page.getByRole("option", { name: "AI referral" }).click()
+  // On desktop every bot type is a one-click segment.
+  await page.getByRole("radio", { name: "Referral" }).click()
   await expect(page).toHaveURL(/type=referral/)
   await page.getByRole("button", { name: "Clear filters" }).click()
   await expect(page).not.toHaveURL(/type=/)
+})
+
+test("pages and platforms open their own reports", async ({ page }) => {
+  await page
+    .getByRole("button", { name: /\/pricing/ })
+    .first()
+    .click()
+  await expect(page).toHaveURL(/page=%2Fpricing/)
+  await expect(page.getByText("Page report")).toBeVisible()
+  await expect(page.getByRole("link", { name: "Open page" })).toHaveAttribute(
+    "href",
+    "https://crawlradar.vercel.app/pricing"
+  )
+  await page.getByRole("button", { name: "Overview" }).click()
+  await expect(page).not.toHaveURL(/page=/)
+
+  await page
+    .getByRole("button", { name: /^OpenAI/ })
+    .first()
+    .click()
+  await expect(page).toHaveURL(/platform=OpenAI/)
+  await expect(page.getByText("Platform report")).toBeVisible()
+  await expect(page.getByText("GPTBot").first()).toBeVisible()
+  await expect(page.getByText("ClaudeBot")).toHaveCount(0)
 })
 
 test("exports the current view and all data as CSV", async ({ page }) => {
@@ -37,7 +61,7 @@ test("exports the current view and all data as CSV", async ({ page }) => {
   const view = page.waitForEvent("download")
   await page.getByRole("menuitem", { name: "Current view" }).click()
   expect((await view).suggestedFilename()).toBe(
-    "crawlradar-demo.crawlradar.dev-7d.csv"
+    "crawlradar-crawlradar.vercel.app-7d.csv"
   )
 
   await page.getByRole("button", { name: /CSV/ }).click()
@@ -45,7 +69,7 @@ test("exports the current view and all data as CSV", async ({ page }) => {
   await page.getByRole("menuitem", { name: "All data for this site" }).click()
   const file = await all
   expect(file.suggestedFilename()).toBe(
-    "crawlradar-demo.crawlradar.dev-all.csv"
+    "crawlradar-crawlradar.vercel.app-all.csv"
   )
   const stream = await file.createReadStream()
   const text = await new Response(stream as unknown as ReadableStream).text()

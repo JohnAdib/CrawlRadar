@@ -112,7 +112,7 @@ pnpm install
 6. Open http://localhost:3000, create an account and add a site. Then send test crawler hits:
 
    ```bash
-   pnpm simulate <site-id> 40 https://<your-project-ref>.supabase.co/functions/v1/track
+   pnpm simulate <site-id> <your-domain> 40 https://<your-project-ref>.supabase.co/functions/v1/track
    ```
 
 ### Option B: fully local (Docker)
@@ -173,16 +173,25 @@ Browsers send only your domain as the referrer for this image, so these hits may
 
 </details>
 
+## Security and privacy
+
+- **Accounts are isolated by the database itself.** Every query runs under Postgres row-level security as the signed-in user. Two people can add the same domain: each gets a separate site with a random ID, and neither can read, change or delete the other's data. [`security.test.sql`](supabase/tests/database/security.test.sql) proves this with 16 checks, and the end-to-end suite repeats it through the real app.
+- **A copied snippet can't inject data.** Site IDs are visible in the snippet, so the tracking function only counts a hit when the page belongs to the site's domain (or a subdomain). Hits from anywhere else are dropped.
+- **Nothing personal is stored.** Only AI crawler hits and AI referrals are kept, IPs are stored as a SHA-256 hash with a salt that rotates daily, and the service-role key never leaves the Edge Function.
+- **Shared links stay private.** A link to a private page sends signed-out visitors (and link-preview bots) to sign in. The preview describes the destination, like "AI crawler dashboard", without showing any data.
+- **Site previews** on the Sites page come from public services (a screenshot from [Microlink](https://microlink.io) and a favicon from Google), which receive only the site's public domain name.
+
 ## Testing
 
-| Suite                   | Command                     | What it covers                                                                                                                                                                                        |
-| ----------------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Suite                   | Command                     | What it covers                                                                                                                                                                                        |
-| ---                     | ---                         | ---                                                                                                                                                                                                   |
-| Lint and format (Biome) | `pnpm lint` / `pnpm format` | Formatting, import order and lint rules across the whole repo                                                                                                                                         |
-| Unit (Vitest)           | `pnpm test`                 | Bot and referrer classifier, stats engine, CSV writer, filters, demo data, site activity, collect endpoint, Supabase client wiring                                                                    |
-| Coverage                | `pnpm test:coverage`        | 100% of statements, branches, functions and lines in that code. CI fails below 100%                                                                                                                   |
-| End-to-end (Playwright) | `pnpm test:e2e`             | Home page demo, sign in/out, filters and CSV export, switching between sites (including one with no data), the full install journey (sign up, add site, snippet, live hits, remove) and phone layouts |
+| Suite                     | Command                     | What it covers                                                                                                                                                                                      |
+| ------------------------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Suite                     | Command                     | What it covers                                                                                                                                                                                      |
+| ---                       | ---                         | ---                                                                                                                                                                                                 |
+| Lint and format (Biome)   | `pnpm lint` / `pnpm format` | Formatting, import order and lint rules across the whole repo                                                                                                                                       |
+| Unit (Vitest)             | `pnpm test`                 | Bot and referrer classifier, stats engine, CSV writer, filters, demo data, site activity, collect endpoint, Supabase client wiring                                                                  |
+| Coverage                  | `pnpm test:coverage`        | 100% of statements, branches, functions and lines in that code. CI fails below 100%                                                                                                                 |
+| End-to-end (Playwright)   | `pnpm test:e2e`             | Home page demo, sign-in redirects, filters, page and platform reports, CSV export, site switching, the full install journey, account isolation, snippet spoofing, social previews and phone layouts |
+| Database security (pgTAP) | `pnpm db:test`              | Row-level security between accounts: two users with the same domain, cross-account reads, writes, deletes and anonymous access                                                                      |
 
 End-to-end tests run against a production build and the local Supabase stack. Run `pnpm db:start` first.
 
@@ -254,16 +263,20 @@ Add one line to `BOT_PATTERNS` in [`supabase/functions/_shared/bots.ts`](supabas
 
 - **JavaScript tracking only sees crawlers that load your page's resources.** Bots that read raw HTML without loading `<script>` or `<img>` are invisible. Server-side tracking (edge middleware or log import) is the planned fix.
 - **`Google-Extended` and `Applebot-Extended` are robots.txt tokens.** Google and Apple crawl with their normal user agents, so these two rarely appear in real traffic.
-- **Site IDs are public.** Someone who copies a snippet could send fake events. Origin checks and rate limiting are on the roadmap.
+- **Rate limiting.** The collection endpoint has no rate limit yet. Hits are only counted from the site's own domain, but a determined script could still send many from it.
 - **Volume.** Fine for small and medium sites on Supabase's free tier. Large sites should add partitioning or a daily rollup table.
 
 ## Roadmap
 
 - [ ] Server-side tracking (middleware and log import)
-- [ ] Origin verification and rate limiting on collection
+- [ ] Rate limiting on collection
 - [ ] Daily rollup table for large sites
 - [ ] robots.txt checker: which AI bots you allow or block
 - [ ] Email digests and alerts
+
+## Credits
+
+Platform logos from [LobeHub Icons](https://github.com/lobehub/lobe-icons) (MIT). Theme toggle adapted from [Magic UI](https://magicui.design) (MIT). Animations with [Motion](https://motion.dev).
 
 ## Contributing
 
