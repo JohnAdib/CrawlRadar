@@ -1,6 +1,7 @@
 {
   "extends": "@crawlradar/typescript-config/nextjs.json",
   "compilerOptions": {
+    "allowImportingTsExtensions": true,
     "paths": {
       "@/*": ["./*"],
       "@crawlradar/ui/*": ["../../packages/ui/src/*"]

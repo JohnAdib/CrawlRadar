@@ -69,6 +69,11 @@ as $$
     select case when p_since > now() - interval '25 hours' then 'hour' else 'day' end as u
   )
   select jsonb_build_object(
+    -- every platform ever seen for the site, unfiltered, to populate the filter dropdown
+    'platforms', coalesce((
+      select jsonb_agg(distinct platform order by platform)
+      from public.crawler_events where site_id = p_site_id
+    ), '[]'::jsonb),
     'total', (select count(*) from e),
     'active_bots', (select count(distinct bot_name) from e),
     'by_platform', coalesce((
