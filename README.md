@@ -38,7 +38,7 @@ Regular analytics tools filter bots out. But AI platforms now read the web aroun
   - **Pages:** every crawled page ranked and searchable; any page opens its own report
   - **Activity log:** every visit with its user agent and referrer, filterable and paginated
   - **Settings:** the snippet, CSV export and the site itself
-- **Filters and export.** 24h / 7d / 30d ranges, platform and bot-type filters kept in the URL, and CSV export (written with [PapaParse](https://www.papaparse.com/)) of the current view or a site's full history.
+- **Filters and export.** 24h / 7d / 30d ranges, platform and bot-type filters kept in the URL, and CSV export of the current view or a site's full history, in exactly the PRD's format (`timestamp,page_url,bot_name,platform,bot_type,user_agent`, written with [PapaParse](https://www.papaparse.com/)).
 - **Polished details.** Animated empty states, loading states, interactive sparklines, light and dark mode, and a layout built for phones.
 - **Private and multi-tenant.** Supabase Auth plus Postgres row-level security, so users only ever see their own data. IPs are stored as a daily-salted hash, never raw.
 
@@ -163,29 +163,31 @@ There are two ways to install. Both send the same hit, so pick one.
 <script async src="https://<your-crawlradar>/t.js?s=<site-id>"></script>
 ```
 
-**Pixel (no JavaScript).** Paste it just before `</body>` of every page:
+**Pixel (no JavaScript).** Paste it just before `</body>` of every page. Let your template write each page's full URL, URL-encoded, into the image link as `u=`, so the page is always exact (UTM tags included) with no Referer needed:
 
 ```html
-<img
-  src="https://<your-crawlradar>/api/collect?t=img&sid=<site-id>"
-  alt=""
-  width="1"
-  height="1"
-  style="position:absolute"
-  referrerpolicy="no-referrer-when-downgrade"
-/>
+<!-- WordPress (footer.php) -->
+<img src="https://<your-crawlradar>/api/collect?t=img&sid=<site-id>&u=<?php echo rawurlencode((is_ssl() ? "https://" : "http://") . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"]); ?>" alt="" width="1" height="1" style="position:absolute">
+
+<!-- Shopify (theme.liquid) -->
+<img src="https://<your-crawlradar>/api/collect?t=img&sid=<site-id>&u={{ canonical_url | url_encode }}" alt="" width="1" height="1" style="position:absolute">
 ```
 
-|                                                    | JavaScript | Pixel                   |
-| -------------------------------------------------- | ---------- | ----------------------- |
-| Counts crawlers that run JavaScript                | Yes        | Yes                     |
-| Counts crawlers that skip JavaScript               | No         | Yes                     |
-| Exact page URL                                     | Yes        | From the Referer header |
-| Counts people sent by ChatGPT and other assistants | Yes        | No                      |
+Settings also has an "Any template" version (replace `PAGE_URL`) and a plain version for static HTML, which takes the page from the `Referer` header instead.
 
-The PRD calls for a "tracking pixel (JS SDK)". The JavaScript tag is exactly that: about 400 bytes that send the visit as a 1×1 image request. The plain pixel is the same request without the script. To use both, wrap the pixel in `<noscript>` so visits aren't counted twice.
+|                                      | JavaScript  | Pixel                                     |
+| ------------------------------------ | ----------- | ----------------------------------------- |
+| Counts crawlers that run JavaScript  | Yes         | Yes                                       |
+| Counts crawlers that skip JavaScript | No          | Yes                                       |
+| Exact page URL, with UTM tags        | Yes         | With your template; else from the Referer |
+| Counts people sent by AI assistants  | All of them | ChatGPT links (their UTM tag)             |
+| Works without editing templates      | Yes         | Plain pixel only                          |
 
-**Head or before `</body>`?** Either works, and `async` means the script never blocks rendering. Before `</body>` keeps the head clean; the head starts a little earlier. Both placements, and the pixel on its own, are covered by an end-to-end test that loads a real page as GPTBot and checks the visit arrives.
+**Why JavaScript is recommended.** It reads the page URL and the site the visitor came from (`document.referrer`) by itself, so it needs no template changes and counts referrals from every assistant. The previous site is only known to the visitor's browser, or to your server on an uncached page, which can pass it to the pixel as `&r=`. ChatGPT links work with both because ChatGPT adds `utm_source=chatgpt.com`, which is part of the page URL.
+
+**How hits are sent.** The JavaScript tag POSTs each hit as a beacon (`navigator.sendBeacon`, as PRD 6.1 describes), and falls back to an image request where beacons aren't available. The pixel is an `<img>`, so it sends a GET. To use both, wrap the pixel in `<noscript>` so visits aren't counted twice.
+
+**Head or before `</body>`?** Either works, and `async` means the script never blocks rendering. Before `</body>` keeps the head clean; the head starts a little earlier. End-to-end tests load real pages as GPTBot and check every variant arrives: the script in the `<head>` and before `</body>` (sent as a POST), the plain pixel, and a template pixel with no Referer at all, whose UTM tag is counted as a ChatGPT referral.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/install-dark.png">
@@ -287,7 +289,7 @@ Add one line to [`ai-bots.ts`](supabase/functions/_shared/ai-bots.ts) (or [`sear
 | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | One `<script src>` tag on your own domain             | Shortest install, a cacheable static tracker, and customers only see your domain                           | Inline loader pointing at `*.supabase.co` (longer, exposes the backend) |
 | `/api/collect` forwards to the Edge Function          | Ingest logic lives in one place, and the web host needs no service-role key                                | Inserting from a Next.js route (secret key in the web host)             |
-| User-Agent read on the server, beacon via a GET pixel | No CORS preflight, and page script can't fake the UA                                                       | `fetch`/`sendBeacon` POST with a JS-reported UA                         |
+| User-Agent read on the server, never from the payload | Page script can't fake it; the script's beacon POST and the pixel's GET carry the same fields              | A JS-reported user agent                                                |
 | Only bot hits and referrals are stored                | Keeps the free tier small and avoids storing personal browsing data                                        | Store everything and filter at query time                               |
 | A curated AI list, then `isbot` for any other bot     | Exact names, platforms and purposes for AI bots; a maintained library catches the rest                     | Only a generic bot/crawl/spider regex                                   |
 | Onboarding unlocks on the first real hit              | Proves the install works end to end, with no test data written to the account                              | A send-test-event button (fake data in the dashboard)                   |
