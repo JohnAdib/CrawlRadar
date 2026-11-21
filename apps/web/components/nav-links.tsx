@@ -1,8 +1,8 @@
 "use client"
 
-import { Button } from "@crawlradar/ui/components/button"
 import { cn } from "@crawlradar/ui/lib/utils"
 import { Globe, LayoutDashboard } from "lucide-react"
+import { motion } from "motion/react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 
@@ -11,6 +11,7 @@ const LINKS = [
   { href: "/sites", label: "Sites", icon: Globe },
 ]
 
+/** Main navigation; the active pill glides between links. */
 export function NavLinks() {
   const pathname = usePathname()
   return (
@@ -18,21 +19,27 @@ export function NavLinks() {
       {LINKS.map(({ href, label, icon: Icon }) => {
         const active = pathname.startsWith(href)
         return (
-          <Button
+          <Link
             key={href}
-            variant="ghost"
-            size="sm"
-            asChild
+            href={href}
+            aria-current={active ? "page" : undefined}
             className={cn(
-              "text-muted-foreground",
-              active && "bg-accent text-foreground"
+              "relative inline-flex h-8 items-center gap-1.5 rounded-md px-3 font-medium text-sm transition-colors [&_svg]:size-4",
+              active
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground"
             )}
           >
-            <Link href={href} aria-current={active ? "page" : undefined}>
-              <Icon />
-              {label}
-            </Link>
-          </Button>
+            {active && (
+              <motion.span
+                layoutId="nav-pill"
+                className="absolute inset-0 rounded-md bg-accent"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.45 }}
+              />
+            )}
+            <Icon className="relative" />
+            <span className="relative">{label}</span>
+          </Link>
         )
       })}
     </nav>

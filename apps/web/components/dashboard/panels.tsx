@@ -1,3 +1,5 @@
+"use client"
+
 import { Badge } from "@crawlradar/ui/components/badge"
 import {
   Table,
@@ -7,28 +9,18 @@ import {
   TableHeader,
   TableRow,
 } from "@crawlradar/ui/components/table"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@crawlradar/ui/components/tooltip"
 import { cn } from "@crawlradar/ui/lib/utils"
+import { ChevronRight } from "lucide-react"
 
+import { BrandLogo } from "@/components/brand-logo"
 import { BOT_TYPES, type BotType } from "@/lib/filters"
-import { formatNumber, timeAgo } from "@/lib/format"
-import { platformColor } from "@/lib/platforms"
+import { formatNumber, timeAgo, visits } from "@/lib/format"
 import type { Stats } from "@/lib/stats"
-
-export function PlatformDot({
-  platform,
-  className,
-}: {
-  platform: string
-  className?: string
-}) {
-  return (
-    <span
-      className={cn("inline-block size-2 shrink-0 rounded-full", className)}
-      style={{ backgroundColor: platformColor(platform) }}
-      aria-hidden
-    />
-  )
-}
 
 export function TypeBadge({ type }: { type: BotType }) {
   return (
@@ -49,72 +41,110 @@ export function TypeBadge({ type }: { type: BotType }) {
 
 function Empty({ children }: { children: React.ReactNode }) {
   return (
-    <p className="flex h-full items-center justify-center text-center text-sm text-muted-foreground">
+    <p className="flex min-h-24 items-center justify-center text-center text-muted-foreground text-sm">
       {children}
     </p>
   )
 }
 
-/** A ranked list; each row has a proportional bar behind it and highlights on hover. */
-function BarList({
-  rows,
-}: {
-  rows: {
-    key: string
-    label: React.ReactNode
-    value: number
-    title?: string
-    mono?: boolean
-  }[]
-}) {
+interface Row {
+  key: string
+  label: React.ReactNode
+  value: number
+  title?: string
+  mono?: boolean
+  onSelect?: () => void
+}
+
+/**
+ * A ranked list; each row has a proportional bar behind it and highlights on hover.
+ * Rows with `onSelect` are buttons that open a report.
+ */
+function BarList({ rows }: { rows: Row[] }) {
   const max = Math.max(...rows.map((r) => r.value), 1)
   return (
     <ul className="flex flex-col gap-1">
-      {rows.map((r) => (
-        <li
-          key={r.key}
-          title={r.title}
-          className="group relative flex h-8 shrink-0 items-center justify-between gap-3 rounded-md px-2.5 text-sm transition-colors hover:bg-muted/70"
-        >
-          <span
-            className="absolute inset-y-1 left-0 rounded-md bg-chart-1/15 transition-[width,background-color] duration-500 group-hover:bg-chart-1/25"
-            style={{ width: `${Math.max((r.value / max) * 100, 2)}%` }}
-            aria-hidden
-          />
-          <span
-            className={cn(
-              "relative min-w-0 truncate",
-              r.mono && "font-mono text-xs"
+      {rows.map((r) => {
+        const content = (
+          <>
+            <span
+              className="absolute inset-y-1 left-0 rounded-md bg-chart-1/15 transition-[width,background-color] duration-500 group-hover:bg-chart-1/25"
+              style={{ width: `${Math.max((r.value / max) * 100, 2)}%` }}
+              aria-hidden
+            />
+            <span
+              className={cn(
+                "relative min-w-0 truncate",
+                r.mono && "font-mono text-xs"
+              )}
+            >
+              {r.label}
+            </span>
+            <span className="relative ml-auto flex shrink-0 items-center gap-1 tabular-nums">
+              {formatNumber(r.value)}
+              {r.onSelect && (
+                <ChevronRight className="-mr-1 size-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+              )}
+            </span>
+          </>
+        )
+        const className =
+          "group relative flex h-8 w-full items-center gap-3 rounded-md px-2.5 text-left text-sm transition-colors hover:bg-muted/70"
+        return (
+          <li key={r.key} title={r.title}>
+            {r.onSelect ? (
+              <button
+                type="button"
+                className={cn(
+                  className,
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                )}
+                onClick={r.onSelect}
+              >
+                {content}
+              </button>
+            ) : (
+              <div className={className}>{content}</div>
             )}
-          >
-            {r.label}
-          </span>
-          <span className="relative shrink-0 tabular-nums">
-            {formatNumber(r.value)}
-          </span>
-        </li>
-      ))}
+          </li>
+        )
+      })}
     </ul>
   )
 }
 
-export function Platforms({ platforms }: { platforms: Stats["by_platform"] }) {
+export function Platforms({
+  platforms,
+  onSelect,
+}: {
+  platforms: Stats["by_platform"]
+  onSelect?: (platform: string) => void
+}) {
+  if (platforms.length === 0) return <Empty>No platforms in this range.</Empty>
   return (
     <BarList
       rows={platforms.map((p) => ({
         key: p.platform,
         label: (
           <span className="flex items-center gap-2">
-            <PlatformDot platform={p.platform} /> {p.platform}
+            <BrandLogo name={p.platform} /> {p.platform}
           </span>
         ),
         value: p.visits,
+        onSelect: onSelect && (() => onSelect(p.platform)),
       }))}
     />
   )
 }
 
-export function TopPages({ pages }: { pages: Stats["top_pages"] }) {
+export function TopPages({
+  pages,
+  onSelect,
+}: {
+  pages: Stats["top_pages"]
+  onSelect?: (page: string) => void
+}) {
+  if (pages.length === 0) return <Empty>No pages in this range.</Empty>
   return (
     <BarList
       rows={pages.map((p) => ({
@@ -123,6 +153,10 @@ export function TopPages({ pages }: { pages: Stats["top_pages"] }) {
         title: p.page_path ?? undefined,
         value: p.visits,
         mono: true,
+        onSelect:
+          onSelect && p.page_path
+            ? () => onSelect(p.page_path as string)
+            : undefined,
       }))}
     />
   )
@@ -138,7 +172,7 @@ export function Referrers({ referrers }: { referrers: Stats["referrers"] }) {
         key: r.source,
         label: (
           <span className="flex items-center gap-2">
-            <PlatformDot platform={r.platform} /> {r.source}
+            <BrandLogo name={r.source} /> {r.source}
           </span>
         ),
         value: r.visits,
@@ -156,7 +190,7 @@ export function Heatmap({ cells }: { cells: Stats["heatmap"] }) {
   const grid = new Map(cells.map((c) => [`${c.dow}:${c.hour}`, c.visits]))
   const max = Math.max(...cells.map((c) => c.visits), 1)
   return (
-    <div className="flex h-full items-center overflow-x-auto">
+    <div className="overflow-x-auto">
       <div className="grid w-full min-w-[440px] grid-cols-[2.25rem_repeat(24,minmax(0,1fr))] gap-[3px] text-[10px] text-muted-foreground">
         {DAYS.map((day, d) => (
           <div key={day} className="contents">
@@ -164,19 +198,29 @@ export function Heatmap({ cells }: { cells: Stats["heatmap"] }) {
             {HOURS.map((hour) => {
               const value = grid.get(`${d + 1}:${hour}`) ?? 0
               return (
-                <span
-                  key={hour}
-                  className="aspect-square rounded-[3px] bg-muted transition-transform duration-150 hover:scale-125 hover:ring-2 hover:ring-chart-1/50"
-                  title={`${day} ${String(hour).padStart(2, "0")}:00 UTC · ${formatNumber(value)} visits`}
-                  style={
-                    value
-                      ? {
-                          backgroundColor: "var(--chart-1)",
-                          opacity: 0.15 + 0.85 * (value / max),
-                        }
-                      : undefined
-                  }
-                />
+                <Tooltip key={hour} delayDuration={0} disableHoverableContent>
+                  <TooltipTrigger asChild>
+                    <span
+                      className="aspect-square rounded-[3px] bg-muted transition-transform duration-150 hover:scale-125 hover:ring-2 hover:ring-chart-1/50"
+                      style={
+                        value
+                          ? {
+                              backgroundColor: "var(--chart-1)",
+                              opacity: 0.15 + 0.85 * (value / max),
+                            }
+                          : undefined
+                      }
+                    />
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <span className="font-medium">
+                      {day} {String(hour).padStart(2, "0")}:00 UTC
+                    </span>
+                    <span className="ml-2 tabular-nums opacity-80">
+                      {visits(value)}
+                    </span>
+                  </TooltipContent>
+                </Tooltip>
               )
             })}
           </div>
@@ -195,13 +239,15 @@ export function Heatmap({ cells }: { cells: Stats["heatmap"] }) {
 export function CrawlersTable({
   bots,
   now,
+  onSelectPlatform,
 }: {
   bots: Stats["by_bot"]
   now?: number
+  onSelectPlatform?: (platform: string) => void
 }) {
   return (
     <Table className="table-fixed">
-      <TableHeader className="sticky top-0 z-10 bg-card">
+      <TableHeader>
         <TableRow>
           <TableHead>Crawler</TableHead>
           <TableHead className="hidden w-28 sm:table-cell">Type</TableHead>
@@ -215,13 +261,28 @@ export function CrawlersTable({
         {bots.map((b) => (
           <TableRow key={b.bot_name + b.platform + b.bot_type}>
             <TableCell className="truncate">
-              <div className="flex min-w-0 items-center gap-2">
-                <PlatformDot platform={b.platform} />
-                <span className="truncate font-medium">{b.bot_name}</span>
-              </div>
-              <div className="truncate pl-4 text-xs text-muted-foreground">
-                {b.platform}
-                <span className="sm:hidden"> · {BOT_TYPES[b.bot_type]}</span>
+              <div className="flex min-w-0 items-center gap-2.5">
+                <BrandLogo name={b.platform} />
+                <div className="min-w-0">
+                  <div className="truncate font-medium">{b.bot_name}</div>
+                  <div className="truncate text-muted-foreground text-xs">
+                    {onSelectPlatform ? (
+                      <button
+                        type="button"
+                        className="underline-offset-2 hover:text-foreground hover:underline"
+                        onClick={() => onSelectPlatform(b.platform)}
+                      >
+                        {b.platform}
+                      </button>
+                    ) : (
+                      b.platform
+                    )}
+                    <span className="sm:hidden">
+                      {" "}
+                      · {BOT_TYPES[b.bot_type]}
+                    </span>
+                  </div>
+                </div>
               </div>
             </TableCell>
             <TableCell className="hidden sm:table-cell">
@@ -252,10 +313,13 @@ export interface ActivityItem {
 export function ActivityFeed({
   events,
   now,
+  onSelectPage,
 }: {
   events: ActivityItem[]
   now?: number
+  onSelectPage?: (page: string) => void
 }) {
+  if (events.length === 0) return <Empty>No recent visits.</Empty>
   return (
     <ul className="flex flex-col">
       {events.map((e) => (
@@ -263,18 +327,28 @@ export function ActivityFeed({
           key={e.id}
           className="flex items-center gap-3 rounded-md border-b px-2 py-2.5 text-sm transition-colors last:border-b-0 hover:bg-muted/70"
         >
-          <PlatformDot platform={e.platform} className="size-2.5" />
+          <BrandLogo name={e.platform} className="size-5" />
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 items-center gap-2">
               <span className="truncate font-medium">{e.bot_name}</span>
               <TypeBadge type={e.bot_type as BotType} />
             </div>
-            <div className="truncate font-mono text-xs text-muted-foreground">
-              {e.page_path}
-            </div>
+            {e.page_path && onSelectPage ? (
+              <button
+                type="button"
+                className="block max-w-full truncate font-mono text-muted-foreground text-xs underline-offset-2 hover:text-foreground hover:underline"
+                onClick={() => onSelectPage(e.page_path as string)}
+              >
+                {e.page_path}
+              </button>
+            ) : (
+              <div className="truncate font-mono text-muted-foreground text-xs">
+                {e.page_path}
+              </div>
+            )}
           </div>
           <time
-            className="shrink-0 text-xs text-muted-foreground"
+            className="shrink-0 text-muted-foreground text-xs"
             dateTime={e.timestamp}
             title={new Date(e.timestamp).toUTCString()}
           >

@@ -8,6 +8,7 @@ import { LogOut } from "lucide-react"
 import Link from "next/link"
 
 import { signOut } from "@/app/login/actions"
+import { HeaderGlow } from "@/components/header-glow"
 import { Logo } from "@/components/logo"
 import { NavLinks } from "@/components/nav-links"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -46,6 +47,7 @@ export function AppHeader({ email }: { email?: string }) {
           </form>
         </div>
       </div>
+      <HeaderGlow />
     </header>
   )
 }

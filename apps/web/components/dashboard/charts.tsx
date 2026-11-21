@@ -48,7 +48,7 @@ export function TrafficChart({
   return (
     <ChartContainer
       config={trafficConfig}
-      className="aspect-auto h-64 w-full sm:h-72"
+      className="aspect-auto h-48 w-full sm:h-56"
     >
       <AreaChart data={data} margin={{ left: 0, right: 8, top: 8 }}>
         <defs>

@@ -8,13 +8,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@crawlradar/ui/components/select"
-import { Spinner } from "@crawlradar/ui/components/spinner"
 import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@crawlradar/ui/components/toggle-group"
 import { X } from "lucide-react"
 
+import { BrandLogo } from "@/components/brand-logo"
 import { BOT_TYPES, type Filters, RANGES } from "@/lib/filters"
 
 const ALL = "all"
@@ -31,7 +31,7 @@ export function FilterBar({
   onChange: (change: FilterChange) => void
   pending?: boolean
 }) {
-  const filtered = Boolean(filters.platform || filters.type)
+  const filtered = Boolean(filters.platform || filters.type || filters.page)
 
   return (
     <div
@@ -74,7 +74,7 @@ export function FilterBar({
           <SelectItem value={ALL}>All platforms</SelectItem>
           {platforms.map((p) => (
             <SelectItem key={p} value={p}>
-              {p}
+              <BrandLogo name={p} /> {p}
             </SelectItem>
           ))}
         </SelectContent>
@@ -88,7 +88,7 @@ export function FilterBar({
       >
         <SelectTrigger
           aria-label="Bot type"
-          className="w-full bg-background sm:w-44"
+          className="w-full bg-background sm:w-44 lg:hidden"
         >
           <SelectValue />
         </SelectTrigger>
@@ -102,18 +102,39 @@ export function FilterBar({
         </SelectContent>
       </Select>
 
+      {/* On wide screens every bot type is one click away. */}
+      <ToggleGroup
+        type="single"
+        variant="outline"
+        value={filters.type ?? ALL}
+        onValueChange={(v) =>
+          v &&
+          onChange({ type: v === ALL ? undefined : (v as Filters["type"]) })
+        }
+        aria-label="Bot type"
+        className="hidden bg-background lg:flex"
+      >
+        <ToggleGroupItem value={ALL} className="px-3">
+          All types
+        </ToggleGroupItem>
+        {Object.entries(BOT_TYPES).map(([value, label]) => (
+          <ToggleGroupItem key={value} value={value} className="px-3">
+            {label.replace(/^AI /, "").replace(/^./, (c) => c.toUpperCase())}
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
+
       {filtered && (
         <Button
           variant="ghost"
           size="sm"
           className="col-span-2 justify-self-start sm:col-span-1"
-          onClick={() => onChange({ platform: undefined, type: undefined })}
+          onClick={() =>
+            onChange({ platform: undefined, type: undefined, page: undefined })
+          }
         >
           <X /> Clear filters
         </Button>
-      )}
-      {pending && (
-        <Spinner className="text-muted-foreground" aria-label="Updating" />
       )}
     </div>
   )
@@ -132,7 +153,12 @@ export function SiteSwitcher({
     <Select
       value={value}
       onValueChange={(site) =>
-        onChange({ site, platform: undefined, type: undefined })
+        onChange({
+          site,
+          platform: undefined,
+          type: undefined,
+          page: undefined,
+        })
       }
     >
       <SelectTrigger aria-label="Site" className="w-full bg-background sm:w-52">

@@ -45,6 +45,7 @@ export async function GET(request: NextRequest) {
     if (params.range) query = query.gte("timestamp", sinceFor(filters.range))
     if (filters.platform) query = query.eq("platform", filters.platform)
     if (filters.type) query = query.eq("bot_type", filters.type)
+    if (filters.page) query = query.eq("page_path", filters.page)
 
     const { data, error } =
       await query.overrideTypes<Record<(typeof COLUMNS)[number], unknown>[]>()

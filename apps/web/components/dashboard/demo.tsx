@@ -32,6 +32,7 @@ export function DemoDashboard({
       since: new Date(now - RANGES[filters.range].ms),
       platform: filters.platform,
       type: filters.type,
+      page: filters.page,
     }),
     [now, filters]
   )
