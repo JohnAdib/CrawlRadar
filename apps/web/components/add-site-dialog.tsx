@@ -94,6 +94,7 @@ function AddSiteForm({
         <CopyBlock
           code={hybrid(origin, site.id)}
           label="Snippet"
+          lang="html"
           className="w-full text-left"
         />
         <DialogFooter className="w-full">

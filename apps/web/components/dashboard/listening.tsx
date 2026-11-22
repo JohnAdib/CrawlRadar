@@ -47,6 +47,7 @@ export function Listening({ domain, code }: { domain: string; code: string }) {
             <CopyBlock
               code={code}
               label="Snippet"
+              lang="html"
               className="w-full text-left"
             />
             <p className="flex items-center gap-2 text-muted-foreground text-xs">

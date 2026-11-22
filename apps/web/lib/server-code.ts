@@ -1,12 +1,14 @@
 // Server-side tracking: what a site owner adds to their server, middleware or CDN.
 // Each example sends the request's page URL, user agent, IP and referer to /api/v1/hits,
 // in the background, so the page is never slowed down.
+import type { CodeLang } from "./highlight"
 
 export interface ServerExample {
   id: string
   label: string
   /** Where the code goes. */
   file: string
+  lang: CodeLang
   code: (origin: string, domain: string) => string
 }
 
@@ -79,18 +81,21 @@ export const SERVER_EXAMPLES: ServerExample[] = [
     id: "nextjs",
     label: "Next.js",
     file: "proxy.ts (middleware.ts before Next.js 16)",
+    lang: "tsx",
     code: nextjs,
   },
   {
     id: "worker",
     label: "Cloudflare Worker",
     file: "a Worker in front of your site, whatever it runs on",
+    lang: "javascript",
     code: worker,
   },
   {
     id: "curl",
     label: "Any server",
     file: "any language: one POST per page request",
+    lang: "shellscript",
     code: curl,
   },
 ]

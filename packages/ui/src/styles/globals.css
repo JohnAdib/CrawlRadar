@@ -228,3 +228,11 @@
     opacity: 1;
   }
 }
+
+/* Syntax highlighting (apps/web/lib/highlight.ts): tokens carry both themes' colours. */
+.code-tokens span {
+  color: var(--shiki-light);
+}
+.dark .code-tokens span {
+  color: var(--shiki-dark);
+}
