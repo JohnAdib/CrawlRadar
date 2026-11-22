@@ -136,7 +136,7 @@ export function ServerSide({
       </Step>
       <Step n={2} title="Report each page request">
         <Tabs defaultValue={SERVER_EXAMPLES[0]!.id}>
-          <TabsList className="max-w-full justify-start overflow-x-auto">
+          <TabsList className="h-auto max-w-full flex-wrap justify-start">
             {SERVER_EXAMPLES.map((e) => (
               <TabsTrigger key={e.id} value={e.id}>
                 {e.label}
@@ -153,6 +153,7 @@ export function ServerSide({
               <CopyBlock
                 code={e.code(origin, domain)}
                 label={`${e.label} code`}
+                lang={e.lang}
               />
             </TabsContent>
           ))}

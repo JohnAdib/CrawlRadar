@@ -63,8 +63,8 @@ export function InstallMethods({
   return (
     <div className="flex flex-col gap-4">
       <Tabs defaultValue="hybrid">
-        {/* Scrolls sideways on a phone rather than spilling out of the card. */}
-        <TabsList className="max-w-full justify-start overflow-x-auto">
+        {/* Wraps onto a second row on a narrow screen rather than spilling out. */}
+        <TabsList className="h-auto max-w-full flex-wrap justify-start">
           {METHODS.map((m) => (
             <TabsTrigger key={m.id} value={m.id}>
               {m.tab}
@@ -74,7 +74,11 @@ export function InstallMethods({
         </TabsList>
         {METHODS.map((m) => (
           <TabsContent key={m.id} value={m.id} className="flex flex-col gap-2">
-            <CopyBlock code={m.code(origin, siteId)} label="Tracking code" />
+            <CopyBlock
+              code={m.code(origin, siteId)}
+              label="Tracking code"
+              lang="html"
+            />
             <p className="text-muted-foreground text-xs">
               Paste it {m.where} of every page. {m.about}
             </p>
