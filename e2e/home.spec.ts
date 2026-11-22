@@ -45,6 +45,15 @@ test("the demo has the same five views as the dashboard", async ({ page }) => {
   await expect(demo.getByLabel("Search pages")).toBeVisible()
   await tabs.getByRole("button", { name: "Activity log" }).click()
   await expect(demo.locator("tbody tr").first()).toBeVisible()
+  // The demo log stops after two batches, so the page keeps a bottom.
+  await expect(async () => {
+    // Bring the end of the list into view, where the next batch loads.
+    await demo.locator("[aria-live=polite]").scrollIntoViewIfNeeded()
+    await expect(
+      demo.getByText("The demo lists the latest 100 visits.")
+    ).toBeVisible({ timeout: 1000 })
+  }).toPass({ timeout: 15_000 })
+  await expect(demo.locator("tbody tr")).toHaveCount(100)
   await tabs.getByRole("button", { name: "Settings" }).click()
   await expect(
     demo.getByRole("tab", { name: "Hybrid (recommended)" })

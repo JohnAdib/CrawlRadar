@@ -6,6 +6,7 @@ import { ActivityLog } from "@/components/dashboard/activity-log"
 import type { LogEvent } from "@/components/dashboard/activity-table"
 import type { Section } from "@/components/dashboard/dashboard-tabs"
 import { FilterBar, type FilterChange } from "@/components/dashboard/filters"
+import { PageVisits } from "@/components/dashboard/page-visits"
 import { PagesView } from "@/components/dashboard/pages-view"
 import { Panel } from "@/components/dashboard/panel"
 import { PlatformsView } from "@/components/dashboard/platforms-view"
@@ -40,7 +41,26 @@ const toLog = (e: CrawlerEvent): LogEvent => ({
   referrer: e.referrer ?? null,
 })
 
-/** The activity log over the demo events, served in batches like the real one. */
+// The demo stops after two batches, so the home page keeps a bottom you can scroll to.
+const DEMO_LOG_LIMIT = 2 * LOG_PAGE_SIZE
+
+/** Demo visits served in batches like the real log, up to DEMO_LOG_LIMIT. */
+function demoBatches(list: LogEvent[]) {
+  const shown = list.slice(0, DEMO_LOG_LIMIT)
+  return {
+    initial: shown.slice(0, LOG_PAGE_SIZE),
+    loadMore: async ({ id }: Cursor) => {
+      const at = shown.findIndex((e) => e.id === id)
+      return shown.slice(at + 1, at + 1 + LOG_PAGE_SIZE)
+    },
+    endNote:
+      list.length > DEMO_LOG_LIMIT
+        ? `The demo lists the latest ${DEMO_LOG_LIMIT} visits.`
+        : undefined,
+  }
+}
+
+/** The activity log over the demo events. */
 function DemoActivity({
   list,
   now,
@@ -50,22 +70,20 @@ function DemoActivity({
   now: number
   onOpenPage: (page: string) => void
 }) {
-  const after = async ({ id }: Cursor) => {
-    const at = list.findIndex((e) => e.id === id)
-    return list.slice(at + 1, at + 1 + LOG_PAGE_SIZE)
-  }
+  const { initial, loadMore, endNote } = demoBatches(list)
   return (
     <Panel
       title="Activity log"
       description={`Every recorded visit, newest first · ${visits(list.length)}`}
     >
       <ActivityLog
-        initial={list.slice(0, LOG_PAGE_SIZE)}
+        initial={initial}
         total={list.length}
         pageSize={LOG_PAGE_SIZE}
-        loadMore={after}
+        loadMore={loadMore}
         now={now}
         onSelectPage={onOpenPage}
+        endNote={endNote}
       />
     </Panel>
   )
@@ -91,7 +109,13 @@ export function DemoView(props: DemoViewProps) {
   const openPage = (page: string) => onOpen("overview", { page })
 
   if (section === "overview") {
-    const recent = recentEvents(events, options, 10)
+    // A page report lists the page's visits; the overview needs the latest 10.
+    const recent = recentEvents(
+      events,
+      options,
+      filters.page ? events.length : 10
+    )
+    const log = filters.page ? demoBatches(recent.map(toLog)) : null
     return (
       <DashboardView
         stats={stats}
@@ -100,6 +124,19 @@ export function DemoView(props: DemoViewProps) {
         domain={DEMO_DOMAIN}
         now={now}
         onChange={onChange}
+        pageVisits={
+          log &&
+          filters.page && (
+            <PageVisits
+              page={filters.page}
+              events={log.initial}
+              total={recent.length}
+              loadMore={log.loadMore}
+              now={now}
+              endNote={log.endNote}
+            />
+          )
+        }
       />
     )
   }
