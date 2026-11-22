@@ -11,7 +11,7 @@ import {
 import { Animation } from "@/components/animation"
 import { AutoRefresh } from "@/components/auto-refresh"
 import { CopyBlock } from "@/components/copy-block"
-import { ScriptPlacement } from "@/components/install/placement"
+import { PixelPlacement } from "@/components/install/placement"
 import { LiveDot } from "@/components/live-dot"
 
 /** A site with no data yet: the snippet again, and a live wait for the first visit. */
@@ -38,7 +38,7 @@ export function Listening({ domain, code }: { domain: string; code: string }) {
               >
                 {domain}
               </a>
-              , <ScriptPlacement />, the first GPTBot, ClaudeBot or ChatGPT
+              , <PixelPlacement />, the first GPTBot, ClaudeBot or ChatGPT
               referral appears here on its own. AI crawlers visit on their own
               schedule, from minutes to a few days.
             </EmptyDescription>

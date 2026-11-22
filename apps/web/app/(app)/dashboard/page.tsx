@@ -3,7 +3,7 @@ import { Listening } from "@/components/dashboard/listening"
 import { LiveDashboard } from "@/components/dashboard/live"
 import { DashboardShell } from "@/components/dashboard/shell"
 import { appOrigin } from "@/lib/origin"
-import { snippet } from "@/lib/snippet"
+import { hybrid } from "@/lib/snippet"
 
 import { loadDashboard, loadEvents, loadStats, type SearchParams } from "./data"
 
@@ -30,7 +30,7 @@ export default async function DashboardPage({
         // No visit recorded yet: keep the install front and centre, without empty views.
         <Listening
           domain={ctx.site.domain}
-          code={snippet(await appOrigin(), ctx.site.id)}
+          code={hybrid(await appOrigin(), ctx.site.id)}
         />
       ) : (
         <LiveDashboard

@@ -3,7 +3,7 @@ import { ArrowLeft, ArrowRight } from "lucide-react"
 
 import { Tag } from "@/components/head-tag"
 import { InstallMethods } from "@/components/install/install-methods"
-import { ScriptPlacement } from "@/components/install/placement"
+import { PixelPlacement } from "@/components/install/placement"
 import { StepCard } from "@/components/onboarding/step-card"
 
 const PLATFORMS: { name: string; where: React.ReactNode }[] = [
@@ -11,7 +11,7 @@ const PLATFORMS: { name: string; where: React.ReactNode }[] = [
     name: "Any HTML site",
     where: (
       <>
-        <ScriptPlacement /> of every page, or once in your shared layout.
+        <PixelPlacement /> of every page, or once in your shared layout.
       </>
     ),
   },
@@ -30,7 +30,7 @@ const PLATFORMS: { name: string; where: React.ReactNode }[] = [
   },
   {
     name: "Webflow / Squarespace / Wix",
-    where: "Site settings → Custom code → Footer code (or Head code).",
+    where: "Site settings → Custom code → Footer code.",
   },
   {
     name: "Next.js / React",
@@ -59,7 +59,7 @@ export function StepInstall({
   return (
     <StepCard
       title="Install the snippet"
-      description={`Add one tag to every page on ${domain}. The JavaScript tag is recommended; the pixel works without JavaScript.`}
+      description={`Add the tracking code to every page on ${domain}. Hybrid is recommended: it works whether or not the visitor runs JavaScript.`}
       footer={
         <>
           <Button variant="ghost" onClick={onBack}>

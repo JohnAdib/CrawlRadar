@@ -33,8 +33,9 @@ test("a new user is guided through five steps and the app stays locked until don
     page,
     `https://www.${domain}/blog`
   )
+  // Hybrid by default: the script, plus a pixel for visitors without JavaScript.
   expect(snippet).toMatch(
-    /^<script async src="http:\/\/localhost:\d+\/t\.js\?s=[0-9a-f-]{36}"><\/script>$/
+    /^<script async src="http:\/\/localhost:\d+\/t\.js\?s=[0-9a-f-]{36}"><\/script>\n<noscript><img [^>]+><\/noscript>$/
   )
   await expect(page.getByText("Step 3 of 5")).toBeVisible()
   await expect(page.getByText("WordPress")).toBeVisible()
@@ -51,7 +52,7 @@ test("a new user is guided through five steps and the app stays locked until don
   await customer.route(`${customerSite}/**`, (route) =>
     route.fulfill({
       contentType: "text/html",
-      body: `<!doctype html><html><head>${snippet}</head><body>Pricing</body></html>`,
+      body: `<!doctype html><html><head></head><body>Pricing${snippet}</body></html>`,
     })
   )
   const collected = customer.waitForResponse((r) =>

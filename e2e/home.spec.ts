@@ -47,7 +47,7 @@ test("the demo has the same five views as the dashboard", async ({ page }) => {
   await expect(demo.locator("tbody tr").first()).toBeVisible()
   await tabs.getByRole("button", { name: "Settings" }).click()
   await expect(
-    demo.getByRole("tab", { name: "Pixel (no JavaScript)" })
+    demo.getByRole("tab", { name: "Hybrid (recommended)" })
   ).toBeVisible()
   await page.goBack()
   await expect(demo.locator("tbody tr").first()).toBeVisible()

@@ -15,8 +15,8 @@ import { createContext, useContext, useState } from "react"
 import { Animation } from "@/components/animation"
 import { CopyBlock } from "@/components/copy-block"
 import { type AddedSite, DomainForm } from "@/components/domain-form"
-import { ScriptPlacement } from "@/components/install/placement"
-import { snippet } from "@/lib/snippet"
+import { PixelPlacement } from "@/components/install/placement"
+import { hybrid } from "@/lib/snippet"
 
 const OpenAddSite = createContext<() => void>(() => {})
 
@@ -87,12 +87,12 @@ function AddSiteForm({
         <DialogHeader className="items-center">
           <DialogTitle>{site.domain} is ready</DialogTitle>
           <DialogDescription>
-            Paste this tag <ScriptPlacement /> of every page. The pixel (no
-            JavaScript) is in the site&apos;s Settings.
+            Paste this <PixelPlacement /> of every page. The other install
+            methods are in the site&apos;s Settings.
           </DialogDescription>
         </DialogHeader>
         <CopyBlock
-          code={snippet(origin, site.id)}
+          code={hybrid(origin, site.id)}
           label="Snippet"
           className="w-full text-left"
         />

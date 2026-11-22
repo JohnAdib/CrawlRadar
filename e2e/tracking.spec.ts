@@ -46,7 +46,7 @@ test("tracked visits flow into every dashboard view, and sites can be managed", 
   await expect(page.getByText("That's all 2 visits")).toBeVisible()
   await page.getByRole("link", { name: "Settings", exact: true }).click()
   await expect(page.getByText(`t.js?s=${siteId}`)).toBeVisible()
-  await page.getByRole("tab", { name: "Pixel (no JavaScript)" }).click()
+  await page.getByRole("tab", { name: "Pixel", exact: true }).click()
   await expect(page.getByText(`sid=${siteId}`)).toBeVisible()
 
   // A second site with no data yet: switching shows the install state for it.

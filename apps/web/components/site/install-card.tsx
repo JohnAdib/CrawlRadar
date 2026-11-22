@@ -23,8 +23,8 @@ export function InstallCard({
       <CardHeader>
         <CardTitle>Install</CardTitle>
         <CardDescription>
-          Add one tag to every page on {domain}: the JavaScript tag, or the
-          pixel if you can&apos;t run scripts.
+          Add the tracking code to every page on {domain}. Hybrid works for
+          every visitor; the table shows what each method records.
         </CardDescription>
       </CardHeader>
       <CardContent>

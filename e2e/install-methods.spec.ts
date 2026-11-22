@@ -1,18 +1,24 @@
-import { type Browser, expect, test } from "@playwright/test"
+import { type Browser, expect, type Page, test } from "@playwright/test"
 
-import { BROWSER, GPTBOT, onboard } from "./helpers"
+import { GPTBOT, onboard } from "./helpers"
 
 test.slow()
 
-/** Visits `path` on the customer's site (as GPTBot by default), with `markup` in the body. */
+/**
+ * Visits `path` on the customer's site as GPTBot, with `markup` in the body, and returns
+ * the HTTP method of the hit it sent. `javaScript: false` is a crawler that runs no scripts.
+ */
 async function visitAsCrawler(
   browser: Browser,
   domain: string,
   path: string,
   markup: string,
-  userAgent = GPTBOT
+  javaScript = true
 ) {
-  const context = await browser.newContext({ userAgent })
+  const context = await browser.newContext({
+    userAgent: GPTBOT,
+    javaScriptEnabled: javaScript,
+  })
   const page = await context.newPage()
   await page.route(`http://${domain}/**`, (route) =>
     route.fulfill({
@@ -30,23 +36,34 @@ async function visitAsCrawler(
   return response.request().method()
 }
 
-test("both install methods record visits: the script before </body>, and the pixel alone", async ({
+/** The tracking code Settings hands out for one method. */
+async function codeFor(page: Page, siteId: string, tab: string) {
+  await page.goto(`/dashboard/settings?site=${siteId}`)
+  await page.getByRole("tab", { name: tab, exact: true }).click()
+  return (await page.getByRole("tabpanel").locator("pre code").textContent())!
+}
+
+/** Waits until every path shows up in the site's activity log. */
+async function expectLogged(page: Page, siteId: string, paths: string[]) {
+  await expect(async () => {
+    await page.goto(`/dashboard/activity?site=${siteId}`)
+    for (const path of paths) {
+      await expect(page.getByText(path).first()).toBeVisible({ timeout: 1000 })
+    }
+  }).toPass({ timeout: 20_000 })
+}
+
+test("JavaScript and Pixel each record visits: the script POSTs, the pixel GETs", async ({
   page,
   browser,
 }) => {
   const domain = `methods-${Date.now()}.test`
   const { siteId } = await onboard(page, domain)
-
-  // The exact tags Settings hands out.
-  await page.goto(`/dashboard/settings?site=${siteId}`)
-  const script = (await page.locator("pre code").first().textContent())!
-  await page.getByRole("tab", { name: "Pixel (no JavaScript)" }).click()
-  await page.getByRole("radio", { name: "Plain HTML" }).click()
-  const pixel = (await page
-    .getByRole("tabpanel")
-    .locator("pre code")
-    .textContent())!
-  expect(script).toContain(`t.js?s=${siteId}`)
+  const script = await codeFor(page, siteId, "JavaScript")
+  const pixel = await codeFor(page, siteId, "Pixel")
+  expect(script).toMatch(
+    /^<script async src="[^"]+\/t\.js\?s=[0-9a-f-]{36}"><\/script>$/
+  )
   expect(pixel).toMatch(/^<img /)
 
   // The script POSTs its hit (PRD 6.1); the pixel can only GET.
@@ -56,66 +73,34 @@ test("both install methods record visits: the script before </body>, and the pix
   expect(await visitAsCrawler(browser, domain, "/with-pixel", pixel)).toBe(
     "GET"
   )
-
-  // Both arrive with the right page and crawler.
-  await expect(async () => {
-    await page.goto(`/dashboard/activity?site=${siteId}`)
-    await expect(page.getByText("/with-script").first()).toBeVisible({
-      timeout: 1000,
-    })
-    await expect(page.getByText("/with-pixel").first()).toBeVisible({
-      timeout: 1000,
-    })
-  }).toPass({ timeout: 20_000 })
+  await expectLogged(page, siteId, ["/with-script", "/with-pixel"])
   await expect(page.getByText("GPTBot", { exact: true })).toHaveCount(2)
 })
 
-test("a template pixel carries its own page URL, so no Referer is needed, UTM tags included", async ({
+test("Hybrid records crawlers with and without JavaScript, each once", async ({
   page,
   browser,
 }) => {
-  const domain = `template-${Date.now()}.test`
+  const domain = `hybrid-${Date.now()}.test`
   const { siteId } = await onboard(page, domain)
-  await page.goto(`/dashboard/settings?site=${siteId}`)
-  await page.getByRole("tab", { name: "Pixel (no JavaScript)" }).click()
-  await page.getByRole("radio", { name: "Any template" }).click()
-  const template = (await page
-    .getByRole("tabpanel")
-    .locator("pre code")
-    .textContent())!
-  expect(template).toContain(`sid=${siteId}&u=PAGE_URL`)
+  const code = await codeFor(page, siteId, "Hybrid (recommended)")
+  expect(code).toContain(`t.js?s=${siteId}`)
+  expect(code).toContain("<noscript><img ")
 
-  // What the site's template renders for two pages. The browser sends no Referer at all.
-  const rendered = (url: string) =>
-    template
-      .replace("PAGE_URL", encodeURIComponent(url))
-      .replace("<img ", '<img referrerpolicy="no-referrer" ')
-  const crawled = `http://${domain}/docs/template-page`
-  const landing = `http://${domain}/landing?utm_source=chatgpt.com`
-  await visitAsCrawler(
-    browser,
-    domain,
-    "/docs/template-page",
-    rendered(crawled)
-  )
-  // A person arriving from a ChatGPT answer: the UTM tag is part of the page URL.
-  await visitAsCrawler(
-    browser,
-    domain,
-    "/landing?utm_source=chatgpt.com",
-    rendered(landing),
-    BROWSER
-  )
+  // With JavaScript the script sends the exact URL, UTM tag included; the pixel stays unused.
+  expect(
+    await visitAsCrawler(
+      browser,
+      domain,
+      "/hybrid-js?utm_source=newsletter",
+      code
+    )
+  ).toBe("POST")
+  // Without JavaScript the <noscript> pixel is loaded instead.
+  expect(
+    await visitAsCrawler(browser, domain, "/hybrid-no-js", code, false)
+  ).toBe("GET")
 
-  await expect(async () => {
-    await page.goto(`/dashboard/activity?site=${siteId}`)
-    await expect(page.getByText("/docs/template-page").first()).toBeVisible({
-      timeout: 1000,
-    })
-    await expect(page.getByText("/landing").first()).toBeVisible({
-      timeout: 1000,
-    })
-  }).toPass({ timeout: 20_000 })
-  await expect(page.getByText("ChatGPT", { exact: true })).toBeVisible()
-  await expect(page.getByText("AI referral").first()).toBeVisible()
+  await expectLogged(page, siteId, ["/hybrid-js", "/hybrid-no-js"])
+  await expect(page.getByText("GPTBot", { exact: true })).toHaveCount(2)
 })
