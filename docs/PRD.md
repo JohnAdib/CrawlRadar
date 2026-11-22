@@ -218,7 +218,7 @@ The install flow is the onboarding at `/onboarding`: sign up, add a domain, copy
 
 ### Deliberate differences
 
-- **How hits travel.** As 6.1 describes, the JavaScript tag POSTs each hit as a beacon (`navigator.sendBeacon`), falling back to an image request where beacons aren't available. It goes through `/api/collect` on the dashboard's domain, which relays it to the Edge Function, so customers never see a backend URL. A plain `<img>` pixel is offered too; it can only send a GET, and the site's template can write the page URL into its link (`u=`) so no Referer is needed.
+- **How hits travel.** As 6.1 describes, the JavaScript snippet POSTs each hit as a beacon (`navigator.sendBeacon`), falling back to an image request where beacons aren't available. It goes through `/api/collect` on the dashboard's domain, which relays it to the Edge Function, so customers never see a backend URL. Three install methods are offered: **Hybrid** (recommended: the script plus a `<noscript>` pixel for visitors without JavaScript), **JavaScript** and **Pixel**. A server-side method is listed in the comparison as planned.
 - **The activity log scrolls endlessly** (keyset batches of 50, loaded before you reach the end) instead of pages.
 - **AI referrals were added.** People arriving from ChatGPT, Perplexity, Claude, Gemini, DeepSeek, Kimi, Qwen and others are tracked as their own type, `referral`.
 - **Search engines were added.** Googlebot, Bingbot, Baiduspider, YandexBot and others are stored as `search_engine`, shown alongside, and kept out of the "AI crawler" totals.

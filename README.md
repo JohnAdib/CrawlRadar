@@ -27,7 +27,7 @@ Regular analytics tools filter bots out. But AI platforms now read the web aroun
 
 ## Features
 
-- **One-line install, two ways.** An async `<script>` tag (about 400 bytes, never blocks the page) or a plain pixel for sites and crawlers without JavaScript. Paste it just before `</body>`, or in the `<head>`.
+- **Three ways to install.** Hybrid (recommended): an async script (about 500 bytes, never blocks the page) plus a `<noscript>` pixel for visitors without JavaScript. Or just the script, or just the pixel. Paste it just before `</body>`.
 - **Guided onboarding.** Five locked steps (account, website, install, verify, explore) with a progress tracker and install tips for WordPress, Shopify, Webflow and frameworks. The dashboard unlocks once the snippet is seen working.
 - **Every AI crawler, classified.** 60+ AI bots grouped by platform and purpose (training, search, assistant), cross-checked with the community [ai.robots.txt](https://github.com/ai-robots-txt/ai.robots.txt) list. That includes Chinese AI platforms: DeepSeek, Qwen and Tongyi (Alibaba), Kimi (Moonshot AI), Doubao (Bytedance), ERNIE (Baidu), Hunyuan (Tencent) and ChatGLM (Zhipu AI). Any other bot is caught by [isbot](https://github.com/omrilotan/isbot) and flagged `Unknown`, named from its user agent.
 - **Search engines alongside.** Googlebot, Bingbot, Baiduspider, YandexBot and others are recorded as their own type, and kept out of the AI totals.
@@ -155,39 +155,43 @@ Local URLs:
 
 Sign up and onboarding walks you through it: add your domain, add one tag to every page, and open your site once. The dashboard unlocks as soon as the tag reports in. Add more sites later from **Sites**; each one's tags, CSV export and removal live in the dashboard's **Settings** view.
 
-There are two ways to install. Both send the same hit, so pick one.
+There are three ways to install. All send the same hit; pick one.
 
-**JavaScript (recommended).** Paste it just before `</body>`, or in the `<head>`, of every page:
+**Hybrid (recommended).** Paste it just before `</body>` of every page. The script reads the page URL, UTM tags and where the visitor came from, and sends them. Where JavaScript doesn't run, the pixel inside `<noscript>` is loaded instead, and browsers that run the script never load it, so no visit is counted twice.
 
 ```html
 <script async src="https://<your-crawlradar>/t.js?s=<site-id>"></script>
+<noscript
+  ><img
+    src="https://<your-crawlradar>/api/collect?t=img&sid=<site-id>"
+    alt=""
+    width="1"
+    height="1"
+    style="position:absolute"
+    referrerpolicy="no-referrer-when-downgrade"
+/></noscript>
 ```
 
-**Pixel (no JavaScript).** Paste it just before `</body>` of every page. Let your template write each page's full URL, URL-encoded, into the image link as `u=`, so the page is always exact (UTM tags included) with no Referer needed:
+**JavaScript.** Just the `<script>` line, pasted just before `</body>`, or in the `<head>`.
 
-```html
-<!-- WordPress (footer.php) -->
-<img src="https://<your-crawlradar>/api/collect?t=img&sid=<site-id>&u=<?php echo rawurlencode((is_ssl() ? "https://" : "http://") . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"]); ?>" alt="" width="1" height="1" style="position:absolute">
+**Pixel.** Just the `<img>`, without `<noscript>`, pasted just before `</body>`. A static image has the same link on every page, so it learns the page from the browser's `Referer` header and can't know where the visitor came from.
 
-<!-- Shopify (theme.liquid) -->
-<img src="https://<your-crawlradar>/api/collect?t=img&sid=<site-id>&u={{ canonical_url | url_encode }}" alt="" width="1" height="1" style="position:absolute">
-```
+| What gets counted                             | Hybrid | JavaScript | Pixel  | Server-side (planned) |
+| --------------------------------------------- | ------ | ---------- | ------ | --------------------- |
+| Crawlers that run JavaScript                  | Yes    | Yes        | Yes    | Yes                   |
+| Crawlers that skip JavaScript but load images | Yes    | No         | Yes    | Yes                   |
+| Crawlers that only read the HTML              | No     | No         | No     | Yes                   |
+| Exact page URL, with UTM tags                 | Yes    | Yes        | Partly | Yes                   |
+| People sent by AI assistants                  | Yes    | Yes        | Partly | Yes                   |
+| One paste, no code changes                    | Yes    | Yes        | Yes    | No                    |
 
-Settings also has an "Any template" version (replace `PAGE_URL`) and a plain version for static HTML, which takes the page from the `Referer` header instead.
+"Partly": the pixel takes the page from the `Referer` header, which some browsers and bots trim, and only recognises ChatGPT referrals (ChatGPT adds `utm_source=chatgpt.com` to its links). In the app, hover a mark for the reason.
 
-|                                      | JavaScript  | Pixel                                     |
-| ------------------------------------ | ----------- | ----------------------------------------- |
-| Counts crawlers that run JavaScript  | Yes         | Yes                                       |
-| Counts crawlers that skip JavaScript | No          | Yes                                       |
-| Exact page URL, with UTM tags        | Yes         | With your template; else from the Referer |
-| Counts people sent by AI assistants  | All of them | ChatGPT links (their UTM tag)             |
-| Works without editing templates      | Yes         | Plain pixel only                          |
+**Server-side** sees every request, including crawlers that only read the HTML, but needs code on your server, CDN or log pipeline. It isn't built yet; it is on the roadmap.
 
-**Why JavaScript is recommended.** It reads the page URL and the site the visitor came from (`document.referrer`) by itself, so it needs no template changes and counts referrals from every assistant. The previous site is only known to the visitor's browser, or to your server on an uncached page, which can pass it to the pixel as `&r=`. ChatGPT links work with both because ChatGPT adds `utm_source=chatgpt.com`, which is part of the page URL.
+**How hits are sent.** The script POSTs each hit as a beacon (`navigator.sendBeacon`, as PRD 6.1 describes), falling back to an image request where beacons aren't available. The pixel is an `<img>`, so it sends a GET.
 
-**How hits are sent.** The JavaScript tag POSTs each hit as a beacon (`navigator.sendBeacon`, as PRD 6.1 describes), and falls back to an image request where beacons aren't available. The pixel is an `<img>`, so it sends a GET. To use both, wrap the pixel in `<noscript>` so visits aren't counted twice.
-
-**Head or before `</body>`?** Either works, and `async` means the script never blocks rendering. Before `</body>` keeps the head clean; the head starts a little earlier. End-to-end tests load real pages as GPTBot and check every variant arrives: the script in the `<head>` and before `</body>` (sent as a POST), the plain pixel, and a template pixel with no Referer at all, whose UTM tag is counted as a ChatGPT referral.
+End-to-end tests load real pages as GPTBot and check that every method arrives: the script in the `<head>` and before `</body>` (sent as a POST), the pixel (a GET), and the hybrid both with JavaScript and without it, each counted once.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/install-dark.png">
