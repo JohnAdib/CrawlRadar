@@ -35,7 +35,7 @@ function Via({ sources }: { sources?: string[] }) {
   if (!sources?.length) return null
   return (
     <span
-      className="block truncate text-muted-foreground text-xs"
+      className="mt-1 block truncate text-muted-foreground text-xs"
       title="Install methods that reported this visit. It is counted once."
     >
       via {sources.map((s) => METHOD[s] ?? s).join(" + ")}
@@ -60,10 +60,13 @@ export function ActivityTable({
   events,
   now,
   onSelectPage,
+  showPage = true,
 }: {
   events: LogEvent[]
   now?: number
   onSelectPage?: (page: string) => void
+  /** False in a page report, where every row is the same page. */
+  showPage?: boolean
 }) {
   return (
     <Table className="table-fixed">
@@ -72,7 +75,9 @@ export function ActivityTable({
           <TableHead className="w-36">When</TableHead>
           <TableHead>Visitor</TableHead>
           <TableHead className="hidden w-32 md:table-cell">Type</TableHead>
-          <TableHead className="hidden sm:table-cell">Page</TableHead>
+          {showPage && (
+            <TableHead className="hidden sm:table-cell">Page</TableHead>
+          )}
           <TableHead className="hidden w-[28%] xl:table-cell">
             User agent
           </TableHead>
@@ -98,23 +103,25 @@ export function ActivityTable({
             </TableCell>
             <TableCell className="hidden md:table-cell">
               <TypeBadge type={e.bot_type as BotType} />
-            </TableCell>
-            <TableCell className="hidden sm:table-cell">
-              {e.page_path && onSelectPage ? (
-                <button
-                  type="button"
-                  className="max-w-full truncate font-mono text-xs underline-offset-2 hover:underline"
-                  onClick={() => onSelectPage(e.page_path as string)}
-                >
-                  {e.page_path}
-                </button>
-              ) : (
-                <span className="truncate font-mono text-xs">
-                  {e.page_path}
-                </span>
-              )}
               <Via sources={e.sources} />
             </TableCell>
+            {showPage && (
+              <TableCell className="hidden sm:table-cell">
+                {e.page_path && onSelectPage ? (
+                  <button
+                    type="button"
+                    className="max-w-full truncate font-mono text-xs underline-offset-2 hover:underline"
+                    onClick={() => onSelectPage(e.page_path as string)}
+                  >
+                    {e.page_path}
+                  </button>
+                ) : (
+                  <span className="truncate font-mono text-xs">
+                    {e.page_path}
+                  </span>
+                )}
+              </TableCell>
+            )}
             <TableCell className="hidden xl:table-cell">
               <code
                 className="block truncate text-muted-foreground text-xs"

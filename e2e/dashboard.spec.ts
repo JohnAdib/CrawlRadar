@@ -65,6 +65,15 @@ test("pages and platforms open their own reports", async ({ page }) => {
     .click()
   await expect(page).toHaveURL(/page=%2Fpricing/)
   await expect(page.getByText("Page report")).toBeVisible()
+  // A page report lists who read that page and when, instead of the latest 10 visits.
+  const visits = page
+    .locator("[data-slot=card]")
+    .filter({ hasText: "Every visit to /pricing" })
+  await expect(visits.locator("tbody tr").first()).toBeVisible()
+  await expect(visits.getByRole("columnheader", { name: "Page" })).toHaveCount(
+    0
+  )
+  await expect(page.getByText("Recent activity")).toHaveCount(0)
   await expect(page.getByRole("link", { name: "Open page" })).toHaveAttribute(
     "href",
     "https://crawlradar.vercel.app/pricing"

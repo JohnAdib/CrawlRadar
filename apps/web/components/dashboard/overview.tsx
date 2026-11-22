@@ -46,6 +46,8 @@ export interface OverviewProps {
   openPlatform: (platform: string) => void
   /** Link to the full Platforms view (live dashboard only). */
   platformsHref?: string
+  /** A page report's full visit log, shown instead of the latest 10 visits. */
+  pageVisits?: React.ReactNode
 }
 
 /** Left column: numbers, traffic, timing and referrals. */
@@ -94,7 +96,7 @@ function SideColumn({
   openPage,
   openPlatform,
   platformsHref,
-}: Omit<OverviewProps, "events" | "now">) {
+}: Omit<OverviewProps, "events" | "now" | "pageVisits">) {
   return (
     <div className="flex min-w-0 flex-col gap-4 sm:gap-6 lg:col-span-4">
       {!filters.page && (
@@ -137,7 +139,8 @@ function SideColumn({
 
 /** The overview: headline numbers, charts, rankings, crawlers and recent activity. */
 export function Overview(props: OverviewProps) {
-  const { stats, events, filters, now, openPage, openPlatform } = props
+  const { stats, events, filters, now, openPage, openPlatform, pageVisits } =
+    props
   const crawlers = stats.by_bot.length
   return (
     <>
@@ -145,6 +148,8 @@ export function Overview(props: OverviewProps) {
         <MainColumn stats={stats} filters={filters} />
         <SideColumn {...props} />
       </div>
+      {/* A page report: who read this page and when, before the crawler summary. */}
+      {pageVisits}
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-12">
         <Panel
           index={5}
@@ -154,7 +159,7 @@ export function Overview(props: OverviewProps) {
               ? `Top ${LIST_LIMIT} of ${crawlers} bots seen in this range`
               : "Every bot seen in this range"
           }
-          className="lg:col-span-7"
+          className={pageVisits ? "lg:col-span-12" : "lg:col-span-7"}
         >
           <CrawlersTable
             bots={stats.by_bot.slice(0, LIST_LIMIT)}
@@ -162,18 +167,20 @@ export function Overview(props: OverviewProps) {
             onSelectPlatform={filters.platform ? undefined : openPlatform}
           />
         </Panel>
-        <Panel
-          index={6}
-          title="Recent activity"
-          description="The latest 10 visits"
-          className="lg:col-span-5"
-        >
-          <ActivityFeed
-            events={events.slice(0, LIST_LIMIT)}
-            now={now}
-            onSelectPage={filters.page ? undefined : openPage}
-          />
-        </Panel>
+        {!pageVisits && (
+          <Panel
+            index={6}
+            title="Recent activity"
+            description="The latest 10 visits"
+            className="lg:col-span-5"
+          >
+            <ActivityFeed
+              events={events.slice(0, LIST_LIMIT)}
+              now={now}
+              onSelectPage={filters.page ? undefined : openPage}
+            />
+          </Panel>
+        )}
       </div>
     </>
   )

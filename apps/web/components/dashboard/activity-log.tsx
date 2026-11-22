@@ -21,6 +21,8 @@ export function ActivityLog({
   loadMore,
   now,
   onSelectPage,
+  showPage,
+  endNote,
 }: {
   initial: LogEvent[]
   total: number
@@ -28,6 +30,10 @@ export function ActivityLog({
   loadMore: (cursor: Cursor) => Promise<LogEvent[]>
   now?: number
   onSelectPage?: (page: string) => void
+  /** False in a page report, where every row is the same page. */
+  showPage?: boolean
+  /** Shown at the end instead of "That's all N visits" (the demo stops early). */
+  endNote?: string
 }) {
   const [events, setEvents] = useState(initial)
   const [more, setMore] = useState(hasMore(initial.length, pageSize))
@@ -66,7 +72,12 @@ export function ActivityLog({
 
   return (
     <div className="flex flex-col">
-      <ActivityTable events={events} now={now} onSelectPage={onSelectPage} />
+      <ActivityTable
+        events={events}
+        now={now}
+        onSelectPage={onSelectPage}
+        showPage={showPage}
+      />
       <div
         ref={sentinel}
         className="flex h-14 items-center justify-center gap-2 text-muted-foreground text-sm"
@@ -79,7 +90,7 @@ export function ActivityLog({
         ) : failed ? (
           "Couldn't load more visits. Reload the page to try again."
         ) : (
-          `That's all ${visits(total)}`
+          (endNote ?? `That's all ${visits(total)}`)
         )}
       </div>
       <span className="sr-only">

@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { Listening } from "@/components/dashboard/listening"
 import { LiveDashboard } from "@/components/dashboard/live"
 import { DashboardShell } from "@/components/dashboard/shell"
+import { LOG_PAGE_SIZE } from "@/lib/events"
 import { appOrigin } from "@/lib/origin"
 import { hybrid } from "@/lib/snippet"
 
@@ -21,7 +22,8 @@ export default async function DashboardPage({
   const ctx = await loadDashboard(searchParams)
   const [stats, recent] = await Promise.all([
     loadStats(ctx),
-    loadEvents(ctx, 10),
+    // A page report lists every visit to the page; the overview, the latest 10.
+    loadEvents(ctx, ctx.filters.page ? LOG_PAGE_SIZE : 10),
   ])
 
   return (
@@ -36,6 +38,7 @@ export default async function DashboardPage({
         <LiveDashboard
           stats={stats}
           events={recent.events}
+          total={recent.total}
           domain={ctx.site.domain}
         />
       )}

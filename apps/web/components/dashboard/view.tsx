@@ -22,6 +22,8 @@ export interface DashboardViewProps {
   platformsHref?: string
   /** Fixed clock for relative times (keeps server and client render identical). */
   now?: number
+  /** A page report's full visit log. */
+  pageVisits?: React.ReactNode
 }
 
 /** The Overview view (filters and content), shared by the live dashboard and the demo. */
@@ -34,6 +36,7 @@ export function DashboardView({
   pending,
   platformsHref,
   now,
+  pageVisits,
 }: DashboardViewProps) {
   const range = RANGES[filters.range].label
   const root = useRef<HTMLDivElement>(null)
@@ -76,6 +79,7 @@ export function DashboardView({
             openPage={(page) => open({ page })}
             openPlatform={(platform) => open({ platform })}
             platformsHref={platformsHref}
+            pageVisits={filters.page ? pageVisits : undefined}
           />
         )}
       </PendingArea>
