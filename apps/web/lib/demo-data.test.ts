@@ -4,6 +4,7 @@ import { classify } from "../../../supabase/functions/_shared/bots"
 
 import {
   DEMO_VISITORS,
+  demoClock,
   generateDemoEvents,
   pick,
   seededRandom,
@@ -52,7 +53,7 @@ describe("generateDemoEvents", () => {
   test("produces sorted events in the 60 days before now", () => {
     expect(events).toHaveLength(500)
     const times = events.map((e) => new Date(e.timestamp).getTime())
-    expect(times.every((t) => t < NOW && t > NOW - 61 * 86_400_000)).toBe(true)
+    expect(times.every((t) => t < NOW && t > NOW - 62 * 86_400_000)).toBe(true)
     expect([...times].sort((x, y) => y - x)).toEqual(times)
   })
 
@@ -82,4 +83,32 @@ test("every demo visitor is classified exactly as the real tracker would", () =>
       type: v.bot_type,
     })
   }
+})
+
+describe("demoClock", () => {
+  test("is 20:00 UTC on the current day, whatever the time", () => {
+    for (const time of ["00:05", "12:00", "23:59"]) {
+      expect(
+        new Date(demoClock(Date.parse(`2026-11-22T${time}:00Z`))).toISOString()
+      ).toBe("2026-11-22T20:00:00.000Z")
+    }
+  })
+
+  test("today always has a full-looking day of traffic, spread across the hours", () => {
+    // Just after midnight UTC used to leave today almost empty, with a pile-up at "now".
+    const now = demoClock(Date.parse("2026-11-22T00:05:00Z"))
+    const today = generateDemoEvents(now).filter(
+      (e) => new Date(e.timestamp).getTime() >= now - 20 * 3_600_000
+    )
+    expect(today.length).toBeGreaterThan(50)
+    expect(
+      new Set(today.map((e) => new Date(e.timestamp).getUTCHours())).size
+    ).toBeGreaterThan(15)
+    // No pile-up: no instant holds more than a handful of visits.
+    const perInstant = new Map<string, number>()
+    for (const e of today) {
+      perInstant.set(e.timestamp, (perInstant.get(e.timestamp) ?? 0) + 1)
+    }
+    expect(Math.max(...perInstant.values())).toBeLessThan(5)
+  })
 })

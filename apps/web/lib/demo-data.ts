@@ -32,6 +32,17 @@ export const DEMO_PAGES: [string, number][] = [
 
 export const DEMO_DOMAIN = "acme-shop.com"
 
+const HOUR = 3_600_000
+const DAY = 24 * HOUR
+
+/**
+ * The demo's clock: 20:00 UTC on the current day. "Today" then always holds most of a
+ * day's traffic, whatever time someone opens the page (just after midnight included).
+ */
+export function demoClock(realNow: number): number {
+  return Math.floor(realNow / DAY) * DAY + 20 * HOUR
+}
+
 export function pick<T>(
   items: T[],
   weight: (item: T) => number,
@@ -56,7 +67,6 @@ export function generateDemoEvents(
   seed = 42
 ): CrawlerEvent[] {
   const rand = seededRandom(seed)
-  const DAY = 86_400_000
   const events: CrawlerEvent[] = []
 
   for (let i = 0; i < count; i++) {
@@ -69,10 +79,9 @@ export function generateDemoEvents(
     const hour = human
       ? 8 + Math.floor(rand() * 12)
       : Math.floor(rand() < 0.6 ? rand() * 8 : rand() * 24)
-    const timestamp = Math.min(
-      now - 1000,
-      dayStart + hour * 3_600_000 + Math.floor(rand() * 3_600_000)
-    )
+    let timestamp = dayStart + hour * HOUR + Math.floor(rand() * HOUR)
+    // An hour that hasn't happened yet today lands on the day before instead.
+    if (timestamp >= now) timestamp -= DAY
     const [path] = pick(DEMO_PAGES, ([, w]) => w, rand)
     events.push({
       id: `demo-${i}`,

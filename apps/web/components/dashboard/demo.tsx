@@ -20,7 +20,7 @@ type DemoState = { section: Section; filters: Filters & { site: string } }
 
 const START: DemoState = {
   section: "overview",
-  filters: { site: "demo", range: "7d" },
+  filters: { site: "demo", range: "30d" },
 }
 
 /**
