@@ -1,8 +1,19 @@
 "use client"
 
+import { cn } from "@crawlradar/ui/lib/utils"
 import { useRef, useState } from "react"
 
 import { formatNumber } from "@/lib/format"
+
+// The card clips overflow: near either end, pin the tooltip to that edge instead of
+// centring it on the cursor, so it always stays fully inside the card.
+const EDGE = {
+  start: "left-1",
+  center: "-translate-x-1/2",
+  end: "right-1",
+} as const
+const edgeOf = (left: number) =>
+  left < 35 ? "start" : left > 65 ? "end" : "center"
 
 export interface SparkPoint {
   label: string
@@ -83,12 +94,14 @@ export function Sparkline({
             }}
           />
           <span
-            className="-translate-x-1/2 pointer-events-none absolute bottom-full mb-1 whitespace-nowrap rounded-md border bg-popover px-2 py-1 text-popover-foreground text-xs shadow-md"
-            // Keep the label inside the card near the edges.
-            style={{ left: `${Math.min(Math.max(left, 22), 78)}%` }}
+            className={cn(
+              "pointer-events-none absolute bottom-full mb-1 flex flex-col whitespace-nowrap rounded-md border bg-popover px-2 py-1 text-popover-foreground text-xs shadow-md",
+              EDGE[edgeOf(left)]
+            )}
+            style={edgeOf(left) === "center" ? { left: `${left}%` } : undefined}
           >
             <span className="text-muted-foreground">{point.label}</span>
-            <span className="ml-2 font-medium tabular-nums">
+            <span className="font-medium tabular-nums">
               {formatNumber(point.value)} {unit}
             </span>
           </span>
