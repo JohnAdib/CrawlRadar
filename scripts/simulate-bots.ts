@@ -15,7 +15,7 @@ const [
 
 if (!siteId || !domain) {
   console.error(
-    "Usage: pnpm simulate <site-id> <domain> [count] [track-url]\nFind the site ID on the site's page under Sites."
+    "Usage: pnpm simulate <site-id> <domain> [count] [track-url]\nFind the site ID in the dashboard, under Settings."
   )
   process.exit(1)
 }

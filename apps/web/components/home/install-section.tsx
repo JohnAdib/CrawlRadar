@@ -1,14 +1,15 @@
 import { Animation } from "@/components/animation"
 import { Reveal } from "@/components/home/motion"
-import { ScriptPlacement } from "@/components/install/placement"
+import { PixelPlacement } from "@/components/install/placement"
 
 const STEPS: { title: string; text: React.ReactNode }[] = [
   { title: "Add your website", text: "Sign up and enter your domain." },
   {
-    title: "Paste one line",
+    title: "Paste the tracking code",
     text: (
       <>
-        The script tag, <ScriptPlacement />. No JavaScript? Use the pixel.
+        Hybrid (recommended): a script tag plus a pixel for visitors without
+        JavaScript, <PixelPlacement />.
       </>
     ),
   },
@@ -36,8 +37,8 @@ export function InstallSection() {
               Live in under five minutes
             </h2>
             <p className="mt-4 text-muted-foreground sm:text-lg">
-              No SDK and no build step. One script tag, loaded asynchronously,
-              so your pages stay fast, or a pixel for sites without JavaScript.
+              No SDK and no build step. An async script tag that never slows
+              your pages, with a pixel for visitors without JavaScript.
             </p>
           </Reveal>
           <ol className="relative flex flex-col gap-6 before:absolute before:top-4 before:bottom-4 before:left-4 before:w-px before:bg-gradient-to-b before:from-chart-1/60 before:to-transparent">
