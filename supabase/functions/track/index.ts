@@ -8,7 +8,7 @@
 // script can't fake it. Ordinary human visits are classified as null and not stored.
 import { createClient } from "npm:@supabase/supabase-js@2"
 import { classify } from "../_shared/bots.ts"
-import { belongsToSite } from "../_shared/origin.ts"
+import { hitBelongsToSite } from "../_shared/origin.ts"
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -114,7 +114,8 @@ async function record(req: Request, url: URL): Promise<void> {
 
   // Only count hits from the site's own domain, so a copied snippet can't inject data.
   const site = await siteFor(sid)
-  if (!site.domain || !belongsToSite(pageUrl, site.domain)) return
+  const origin = req.headers.get("origin")
+  if (!site.domain || !hitBelongsToSite(pageUrl, origin, site.domain)) return
   await markInstalled(sid, site)
 
   const hit = classify(userAgent, referrer, pageUrl)

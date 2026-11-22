@@ -17,3 +17,16 @@ export function belongsToSite(pageUrl: string, domain: string): boolean {
   const site = domain.toLowerCase().replace(/^www\./, "")
   return host === site || host.endsWith(`.${site}`)
 }
+
+/**
+ * True when a hit may count: its page is on the site and so is the Origin header, when the
+ * browser sends one (beacons do; page scripts can't fake it, unlike the page URL).
+ */
+export function hitBelongsToSite(
+  pageUrl: string,
+  origin: string | null,
+  domain: string
+): boolean {
+  if (!belongsToSite(pageUrl, domain)) return false
+  return !origin || origin === "null" || belongsToSite(origin, domain)
+}

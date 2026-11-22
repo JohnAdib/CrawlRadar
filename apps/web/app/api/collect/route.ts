@@ -16,7 +16,7 @@ const NO_CACHE = {
   "access-control-allow-origin": "*",
 }
 
-/** The visitor's UA, IP and referer: the track function classifies from these. */
+/** The visitor's UA, IP, referer and origin: the track function classifies and checks these. */
 function visitorHeaders(request: NextRequest): Record<string, string> {
   const headers: Record<string, string> = {
     "user-agent": request.headers.get("user-agent") ?? "",
@@ -24,8 +24,10 @@ function visitorHeaders(request: NextRequest): Record<string, string> {
   const ip =
     request.headers.get("x-forwarded-for") ?? request.headers.get("x-real-ip")
   if (ip) headers["x-forwarded-for"] = ip
-  const referer = request.headers.get("referer")
-  if (referer) headers.referer = referer
+  for (const name of ["referer", "origin"]) {
+    const value = request.headers.get(name)
+    if (value) headers[name] = value
+  }
   return headers
 }
 
