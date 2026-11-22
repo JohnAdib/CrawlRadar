@@ -1,4 +1,3 @@
-
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
@@ -25,14 +24,14 @@ export type Database = {
           Tables: {
             "crawler_events": {
                   Row: {
-                    "bot_name": string,"bot_type": string,"id": string,"ip_hash": string | null,"page_path": string | null,"page_url": string,"platform": string,"referrer": string | null,"site_id": string,"timestamp": string,"user_agent": string
+                    "bot_name": string,"bot_type": string,"id": string,"ip_hash": string | null,"page_path": string | null,"page_url": string,"platform": string,"referrer": string | null,"site_id": string,"sources": (string)[],"timestamp": string,"user_agent": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "bot_name": string,"bot_type": string,"id"?: string,"ip_hash"?: string | null,"page_path"?: string | null,"page_url": string,"platform": string,"referrer"?: string | null,"site_id": string,"timestamp"?: string,"user_agent": string
+                    "bot_name": string,"bot_type": string,"id"?: string,"ip_hash"?: string | null,"page_path"?: string | null,"page_url": string,"platform": string,"referrer"?: string | null,"site_id": string,"sources"?: (string)[],"timestamp"?: string,"user_agent": string
                   }
                   Update: {
-                    "bot_name"?: string,"bot_type"?: string,"id"?: string,"ip_hash"?: string | null,"page_path"?: string | null,"page_url"?: string,"platform"?: string,"referrer"?: string | null,"site_id"?: string,"timestamp"?: string,"user_agent"?: string
+                    "bot_name"?: string,"bot_type"?: string,"id"?: string,"ip_hash"?: string | null,"page_path"?: string | null,"page_url"?: string,"platform"?: string,"referrer"?: string | null,"site_id"?: string,"sources"?: (string)[],"timestamp"?: string,"user_agent"?: string
                   }
                   Relationships: [
                     {
@@ -45,14 +44,14 @@ isOneToOne: false
                   ]
                 },"sites": {
                   Row: {
-                    "created_at": string,"domain": string,"id": string,"installed_at": string | null,"user_id": string
+                    "created_at": string,"domain": string,"id": string,"installed_at": string | null,"server_key_hash": string | null,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"domain": string,"id"?: string,"installed_at"?: string | null,"user_id"?: string
+                    "created_at"?: string,"domain": string,"id"?: string,"installed_at"?: string | null,"server_key_hash"?: string | null,"user_id"?: string
                   }
                   Update: {
-                    "created_at"?: string,"domain"?: string,"id"?: string,"installed_at"?: string | null,"user_id"?: string
+                    "created_at"?: string,"domain"?: string,"id"?: string,"installed_at"?: string | null,"server_key_hash"?: string | null,"user_id"?: string
                   }
                   Relationships: [
                     
@@ -68,6 +67,9 @@ isOneToOne: false
                            },
 "crawler_stats":
 { Args: { "p_bot_type"?: string,"p_page_path"?: string,"p_platform"?: string,"p_since": string,"p_site_id": string }; Returns: Json
+                           },
+"record_hit":
+{ Args: { "p_bot_name": string,"p_bot_type": string,"p_ip_hash": string,"p_page_path": string,"p_page_url": string,"p_platform": string,"p_referrer": string,"p_site_id": string,"p_source": string,"p_user_agent": string }; Returns: string
                            }
           }
           Enums: {
