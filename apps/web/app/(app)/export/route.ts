@@ -1,35 +1,40 @@
 import type { NextRequest } from "next/server"
 
 import { CSV_HEADER, csvRows, type ExportEvent } from "@/lib/csv"
+import { afterCursor, type Cursor, cursorOf } from "@/lib/events"
 import { type Filters, parseFilters, sinceFor } from "@/lib/filters"
 import { createClient } from "@/lib/supabase/server"
 
-// Everything the PRD appendix format needs (page_path is written in the page_url column).
+// Everything the PRD appendix format needs (page_path is written in the page_url column),
+// plus the id for keyset paging.
 const COLUMNS =
-  "timestamp, page_url, page_path, bot_name, platform, bot_type, user_agent"
+  "id, timestamp, page_url, page_path, bot_name, platform, bot_type, user_agent"
 const PAGE = 1000 // PostgREST's default max rows per request
 
 type Client = Awaited<ReturnType<typeof createClient>>
+type Row = ExportEvent & Cursor
 
-/** One page of events, newest first, with the export's filters applied. */
+/** The page of events after `after`, newest first, with the export's filters applied. */
 function eventsPage(
   supabase: Client,
   siteId: string,
   filters: Filters,
   since: string | null,
-  from: number
+  after: Cursor | null
 ) {
   let query = supabase
     .from("crawler_events")
     .select(COLUMNS)
     .eq("site_id", siteId)
     .order("timestamp", { ascending: false })
-    .range(from, from + PAGE - 1)
+    .order("id", { ascending: false })
+    .limit(PAGE)
+  if (after) query = query.or(afterCursor(after))
   if (since) query = query.gte("timestamp", since)
   if (filters.platform) query = query.eq("platform", filters.platform)
   if (filters.type) query = query.eq("bot_type", filters.type)
   if (filters.page) query = query.eq("page_path", filters.page)
-  return query.overrideTypes<ExportEvent[]>()
+  return query.overrideTypes<Row[]>()
 }
 
 /**
@@ -50,22 +55,38 @@ export async function GET(request: NextRequest) {
   if (!site) return new Response("Site not found", { status: 404 })
 
   const since = params.range ? sinceFor(filters.range) : null
-  let csv = CSV_HEADER
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await eventsPage(
-      supabase,
-      site.id,
-      filters,
-      since,
-      from
-    )
-    if (error) return new Response(error.message, { status: 500 })
-    csv += csvRows(data)
-    if (data.length < PAGE) break
-  }
+  const next = (after: Cursor | null) =>
+    eventsPage(supabase, site.id, filters, since, after)
+
+  // The first page is read up front, so a failure is still a proper error response.
+  const first = await next(null)
+  if (first.error) return new Response(first.error.message, { status: 500 })
+
+  // Then streamed page by page: any size, never held in memory as one string.
+  // Keyset paging stays exact even if visits arrive during the download.
+  const encoder = new TextEncoder()
+  let rows = first.data
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(encoder.encode(CSV_HEADER + csvRows(rows)))
+    },
+    async pull(controller) {
+      if (rows.length < PAGE) {
+        controller.close()
+        return
+      }
+      const { data, error } = await next(cursorOf(rows.at(-1)!))
+      if (error) {
+        controller.error(new Error(error.message))
+        return
+      }
+      rows = data
+      controller.enqueue(encoder.encode(csvRows(rows)))
+    },
+  })
 
   const name = `crawlradar-${site.domain}-${params.range ?? "all"}.csv`
-  return new Response(csv, {
+  return new Response(body, {
     headers: {
       "content-type": "text/csv; charset=utf-8",
       "content-disposition": `attachment; filename="${name}"`,
