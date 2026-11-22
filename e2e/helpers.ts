@@ -1,4 +1,9 @@
-import { type APIResponse, expect, type Page } from "@playwright/test"
+import {
+  type APIResponse,
+  type Browser,
+  expect,
+  type Page,
+} from "@playwright/test"
 
 export const DEMO = {
   email: "demo@crawlradar.dev",
@@ -74,4 +79,36 @@ export async function onboard(page: Page, domain: string) {
   const site = await addFirstSite(page, domain)
   await finishOnboarding(page, site.siteId, domain)
   return site
+}
+
+/**
+ * Visits `path` on the customer's site as GPTBot, with `markup` in the body, and returns
+ * the HTTP method of the hit it sent. `javaScript: false` is a crawler that runs no scripts.
+ */
+export async function visitAsCrawler(
+  browser: Browser,
+  domain: string,
+  path: string,
+  markup: string,
+  javaScript = true
+) {
+  const context = await browser.newContext({
+    userAgent: GPTBOT,
+    javaScriptEnabled: javaScript,
+  })
+  const page = await context.newPage()
+  await page.route(`http://${domain}/**`, (route) =>
+    route.fulfill({
+      contentType: "text/html",
+      body: `<!doctype html><html><head><title>Docs</title></head><body><main>Docs</main>${markup}</body></html>`,
+    })
+  )
+  const collected = page.waitForResponse((r) =>
+    r.url().includes("/api/collect")
+  )
+  await page.goto(`http://${domain}${path}`)
+  const response = await collected
+  expect(response.ok()).toBe(true)
+  await context.close()
+  return response.request().method()
 }

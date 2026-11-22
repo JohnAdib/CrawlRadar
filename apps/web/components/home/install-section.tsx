@@ -38,7 +38,8 @@ export function InstallSection() {
             </h2>
             <p className="mt-4 text-muted-foreground sm:text-lg">
               No SDK and no build step. An async script tag that never slows
-              your pages, with a pixel for visitors without JavaScript.
+              your pages, with a pixel for visitors without JavaScript. Add
+              server-side tracking to count crawlers that only read the HTML.
             </p>
           </Reveal>
           <ol className="relative flex flex-col gap-6 before:absolute before:top-4 before:bottom-4 before:left-4 before:w-px before:bg-gradient-to-b before:from-chart-1/60 before:to-transparent">

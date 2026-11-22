@@ -21,6 +21,26 @@ export interface LogEvent {
   page_path: string | null
   user_agent: string
   referrer: string | null
+  sources?: string[]
+}
+
+const METHOD: Record<string, string> = {
+  script: "Script",
+  pixel: "Pixel",
+  server: "Server",
+}
+
+/** "via Server + Script": the install methods that reported this one visit. */
+function Via({ sources }: { sources?: string[] }) {
+  if (!sources?.length) return null
+  return (
+    <span
+      className="block truncate text-muted-foreground text-xs"
+      title="Install methods that reported this visit. It is counted once."
+    >
+      via {sources.map((s) => METHOD[s] ?? s).join(" + ")}
+    </span>
+  )
 }
 
 function When({ iso, now }: { iso: string; now?: number }) {
@@ -93,6 +113,7 @@ export function ActivityTable({
                   {e.page_path}
                 </span>
               )}
+              <Via sources={e.sources} />
             </TableCell>
             <TableCell className="hidden xl:table-cell">
               <code

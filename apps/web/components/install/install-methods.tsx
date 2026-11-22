@@ -10,12 +10,18 @@ import {
 import { CopyBlock } from "@/components/copy-block"
 import { Comparison } from "@/components/install/comparison"
 import { PixelPlacement, ScriptPlacement } from "@/components/install/placement"
+import { ServerSide } from "@/components/install/server-side"
 import { hybrid, pixel, snippet } from "@/lib/snippet"
 
 const METHODS = [
   {
     id: "hybrid",
-    tab: "Hybrid (recommended)",
+    // One flex item, so the space stays a normal space; "(recommended)" is hidden on phones.
+    tab: (
+      <span>
+        Hybrid<span className="hidden sm:inline"> (recommended)</span>
+      </span>
+    ),
     code: hybrid,
     where: <PixelPlacement />,
     about:
@@ -39,23 +45,32 @@ const METHODS = [
   },
 ] as const
 
-/** The three ways to install, with what each records. Same in onboarding, Settings and the demo. */
+/** The four ways to install, with what each records. Same in onboarding, Settings and the demo. */
 export function InstallMethods({
   origin,
   siteId,
+  domain,
+  hasServerKey = false,
+  demo,
 }: {
   origin: string
   siteId: string
+  domain: string
+  hasServerKey?: boolean
+  /** The home page demo: explains instead of creating a key. */
+  demo?: boolean
 }) {
   return (
     <div className="flex flex-col gap-4">
       <Tabs defaultValue="hybrid">
-        <TabsList>
+        {/* Scrolls sideways on a phone rather than spilling out of the card. */}
+        <TabsList className="max-w-full justify-start overflow-x-auto">
           {METHODS.map((m) => (
             <TabsTrigger key={m.id} value={m.id}>
               {m.tab}
             </TabsTrigger>
           ))}
+          <TabsTrigger value="server">Server-side</TabsTrigger>
         </TabsList>
         {METHODS.map((m) => (
           <TabsContent key={m.id} value={m.id} className="flex flex-col gap-2">
@@ -65,6 +80,15 @@ export function InstallMethods({
             </p>
           </TabsContent>
         ))}
+        <TabsContent value="server">
+          <ServerSide
+            origin={origin}
+            siteId={siteId}
+            domain={domain}
+            hasKey={hasServerKey}
+            demo={demo}
+          />
+        </TabsContent>
       </Tabs>
       <Comparison />
     </div>

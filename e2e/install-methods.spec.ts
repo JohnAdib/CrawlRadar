@@ -1,40 +1,8 @@
-import { type Browser, expect, type Page, test } from "@playwright/test"
+import { expect, type Page, test } from "@playwright/test"
 
-import { GPTBOT, onboard } from "./helpers"
+import { onboard, visitAsCrawler } from "./helpers"
 
 test.slow()
-
-/**
- * Visits `path` on the customer's site as GPTBot, with `markup` in the body, and returns
- * the HTTP method of the hit it sent. `javaScript: false` is a crawler that runs no scripts.
- */
-async function visitAsCrawler(
-  browser: Browser,
-  domain: string,
-  path: string,
-  markup: string,
-  javaScript = true
-) {
-  const context = await browser.newContext({
-    userAgent: GPTBOT,
-    javaScriptEnabled: javaScript,
-  })
-  const page = await context.newPage()
-  await page.route(`http://${domain}/**`, (route) =>
-    route.fulfill({
-      contentType: "text/html",
-      body: `<!doctype html><html><head><title>Docs</title></head><body><main>Docs</main>${markup}</body></html>`,
-    })
-  )
-  const collected = page.waitForResponse((r) =>
-    r.url().includes("/api/collect")
-  )
-  await page.goto(`http://${domain}${path}`)
-  const response = await collected
-  expect(response.ok()).toBe(true)
-  await context.close()
-  return response.request().method()
-}
 
 /** The tracking code Settings hands out for one method. */
 async function codeFor(page: Page, siteId: string, tab: string) {

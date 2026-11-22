@@ -32,6 +32,16 @@ export const DEMO_PAGES: [string, number][] = [
 
 export const DEMO_DOMAIN = "acme-shop.com"
 
+// The demo site runs Hybrid plus server-side: most visits are reported by the server, and
+// by the script too when the visitor runs JavaScript, yet each is one visit.
+const SOURCE_MIX = [
+  ["server", "script"],
+  ["server"],
+  ["server", "script"],
+  ["server", "pixel"],
+  ["server"],
+]
+
 const HOUR = 3_600_000
 const DAY = 24 * HOUR
 
@@ -93,6 +103,7 @@ export function generateDemoEvents(
       page_url: `https://${DEMO_DOMAIN}${path}`,
       user_agent: visitor.user_agent,
       referrer: visitor.referrer ?? null,
+      sources: SOURCE_MIX[i % SOURCE_MIX.length],
     })
   }
   return events.sort((a, b) => b.timestamp.localeCompare(a.timestamp))

@@ -10,6 +10,8 @@ export interface CrawlerEvent {
   page_url?: string
   user_agent?: string
   referrer?: string | null
+  /** The install methods that reported this visit: script, pixel and/or server. */
+  sources?: string[]
 }
 
 /** Visits in one time bucket, split by bot type. */

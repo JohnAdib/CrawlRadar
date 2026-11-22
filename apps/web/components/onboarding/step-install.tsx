@@ -71,7 +71,7 @@ export function StepInstall({
         </>
       }
     >
-      <InstallMethods origin={origin} siteId={siteId} />
+      <InstallMethods origin={origin} siteId={siteId} domain={domain} />
       <dl className="divide-y rounded-lg border text-sm">
         {PLATFORMS.map((p) => (
           <div

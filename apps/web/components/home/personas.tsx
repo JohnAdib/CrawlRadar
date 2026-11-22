@@ -66,7 +66,7 @@ const PERSONAS: Persona[] = [
     text: "A few hundred bytes, loaded asynchronously, never blocks rendering. A guided five-step setup checks that it works before you move on.",
     points: [
       "Works with any site, CMS or framework",
-      "Optional pixel for crawlers without JavaScript",
+      "Pixel and server-side options, each visit counted once",
       "Hits from copied snippets are rejected",
     ],
     view: "Onboarding",

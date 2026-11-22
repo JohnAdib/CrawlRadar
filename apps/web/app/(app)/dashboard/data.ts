@@ -59,7 +59,7 @@ export async function loadPages({ supabase, site, filters, since }: Loaded) {
 }
 
 const EVENT_COLUMNS =
-  "id, timestamp, bot_name, platform, bot_type, page_path, user_agent, referrer"
+  "id, timestamp, bot_name, platform, bot_type, page_path, user_agent, referrer, sources"
 
 /** What loadEvents needs: a client, the site, its filters and the range start. */
 export interface EventsQuery {

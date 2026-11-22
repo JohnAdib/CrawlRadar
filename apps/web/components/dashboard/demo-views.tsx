@@ -105,12 +105,16 @@ export function DemoView(props: DemoViewProps) {
   }
   if (section === "settings") {
     return (
-      <div className="grid gap-6 lg:grid-cols-2">
-        <InstallCard
-          domain={DEMO_DOMAIN}
-          origin={props.origin}
-          siteId="YOUR_SITE_ID"
-        />
+      // Same proportions as the real Settings: the install card gets two thirds.
+      <div className="grid items-start gap-6 lg:grid-cols-3">
+        <div className="min-w-0 lg:col-span-2">
+          <InstallCard
+            domain={DEMO_DOMAIN}
+            origin={props.origin}
+            siteId="YOUR_SITE_ID"
+            demo
+          />
+        </div>
         <ExportCard siteId="demo" onExport={props.onExport} />
       </div>
     )

@@ -48,7 +48,7 @@ const ROWS: [string, Mark, Mark, Mark, Mark][] = [
     true,
     true,
     true,
-    [false, "Needs code on your server, CDN or log pipeline"],
+    [false, "Needs a few lines in your server, middleware or CDN"],
   ],
 ]
 
@@ -85,7 +85,7 @@ function MarkIcon({ mark }: { mark: Mark }) {
   )
 }
 
-/** What each install method records. Server-side is planned, shown for comparison. */
+/** What each install method records. Methods can be combined; each page view counts once. */
 export function Comparison() {
   return (
     <div className="overflow-x-auto">
@@ -96,9 +96,6 @@ export function Comparison() {
             {METHODS.map((method) => (
               <th key={method} className="w-24 py-2 text-center font-medium">
                 {method}
-                {method === "Server-side" && (
-                  <span className="block font-normal text-[10px]">Planned</span>
-                )}
               </th>
             ))}
           </tr>
@@ -108,10 +105,7 @@ export function Comparison() {
             <tr key={label}>
               <td className="py-2 pr-2">{label}</td>
               {marks.map((mark, i) => (
-                <td
-                  key={METHODS[i]}
-                  className={cn("py-2", i === 3 && "opacity-60")}
-                >
+                <td key={METHODS[i]} className="py-2">
                   <span className="flex justify-center">
                     <MarkIcon mark={mark} />
                   </span>
@@ -121,6 +115,10 @@ export function Comparison() {
           ))}
         </tbody>
       </table>
+      <p className="mt-2 text-muted-foreground text-xs">
+        Use more than one: Hybrid plus Server-side counts every crawler, and a
+        page view reported by several methods is still counted once.
+      </p>
     </div>
   )
 }

@@ -13,7 +13,7 @@ const meta = {
       </div>
     ),
   ],
-  args: { origin: ORIGIN, siteId: SITE.id },
+  args: { origin: ORIGIN, siteId: SITE.id, domain: SITE.domain, demo: true },
 } satisfies Meta<typeof InstallMethods>
 
 export default meta

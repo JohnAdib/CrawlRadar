@@ -13,7 +13,7 @@ const meta = {
       </div>
     ),
   ],
-  args: { domain: SITE.domain, origin: ORIGIN, siteId: SITE.id },
+  args: { domain: SITE.domain, origin: ORIGIN, siteId: SITE.id, demo: true },
 } satisfies Meta<typeof InstallCard>
 
 export default meta

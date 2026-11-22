@@ -23,14 +23,24 @@ export default async function SettingsPage({
 }) {
   const ctx = await loadDashboard(searchParams)
   const { site } = ctx
-  const [activity, origin] = await Promise.all([
+  const [activity, origin, key] = await Promise.all([
     siteActivity(ctx.supabase, site.id),
     appOrigin(),
+    ctx.supabase
+      .from("sites")
+      .select("server_key_hash")
+      .eq("id", site.id)
+      .maybeSingle(),
   ])
   return (
     <div className="fade-in grid animate-in items-start gap-6 duration-300 motion-reduce:animate-none lg:grid-cols-3">
       <div className="flex min-w-0 flex-col gap-6 lg:col-span-2">
-        <InstallCard domain={site.domain} origin={origin} siteId={site.id} />
+        <InstallCard
+          domain={site.domain}
+          origin={origin}
+          siteId={site.id}
+          hasServerKey={Boolean(key.data?.server_key_hash)}
+        />
         <ExportCard siteId={site.id} />
         <DetailsCard
           site={site}
