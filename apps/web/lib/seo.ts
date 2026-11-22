@@ -52,7 +52,12 @@ export function privatePagePreview(next: string | undefined): {
   }
 }
 
-/** Only same-site relative paths are allowed as a post-sign-in destination. */
+/** Only same-site paths are allowed as a post-sign-in destination. */
 export function safeNext(next: string | null | undefined): string {
-  return next?.startsWith("/") && !next.startsWith("//") ? next : "/dashboard"
+  if (!next?.startsWith("/")) return "/dashboard"
+  // Resolve it as a browser would: "/\evil.com" or "/\t/evil.com" leave the site.
+  const url = new URL(next, "https://same.invalid")
+  return url.origin === "https://same.invalid"
+    ? url.pathname + url.search + url.hash
+    : "/dashboard"
 }

@@ -40,7 +40,10 @@ describe("privatePagePreview", () => {
 describe("safeNext", () => {
   test("allows same-site paths only", () => {
     expect(safeNext("/sites/abc")).toBe("/sites/abc")
+    expect(safeNext("/dashboard?site=1#top")).toBe("/dashboard?site=1#top")
     expect(safeNext("//evil.com")).toBe("/dashboard")
+    expect(safeNext("/\\evil.com")).toBe("/dashboard")
+    expect(safeNext("/\t/evil.com")).toBe("/dashboard")
     expect(safeNext("https://evil.com")).toBe("/dashboard")
     expect(safeNext(null)).toBe("/dashboard")
   })
