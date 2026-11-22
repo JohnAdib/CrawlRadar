@@ -210,15 +210,16 @@ The install flow is the onboarding at `/onboarding`: sign up, add a domain, copy
 
 ### Risks
 
-| Risk                        | What was done                                                                                                                                                                                                                |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Bots may not run JavaScript | Three install methods: Hybrid (recommended), the JavaScript tag, or a plain pixel; the pixel also counts crawlers which fetch images but skip scripts. The README documents the rest; server-side tracking is on the roadmap |
-| Signatures change           | Partial, case-insensitive matching, a list checked against ai.robots.txt, and isbot for anything new                                                                                                                         |
-| High volume                 | Only bot and referral hits are stored; indexes on `(site_id, timestamp)`; free-tier limits and the upgrade path are in the README                                                                                            |
+| Risk                        | What was done                                                                                                                                                                                         |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Bots may not run JavaScript | Hybrid (recommended), the JavaScript tag or a plain pixel, which also counts crawlers that fetch images but skip scripts. v2 adds server-side tracking, which counts crawlers that only read the HTML |
+| Signatures change           | Partial, case-insensitive matching, a list checked against ai.robots.txt, and isbot for anything new                                                                                                  |
+| High volume                 | Only bot and referral hits are stored; indexes on `(site_id, timestamp)`; free-tier limits and the upgrade path are in the README                                                                     |
 
 ### Deliberate differences
 
-- **How hits travel.** As 6.1 describes, the JavaScript snippet POSTs each hit as a beacon (`navigator.sendBeacon`), falling back to an image request where beacons aren't available. It goes through `/api/collect` on the dashboard's domain, which relays it to the Edge Function, so customers never see a backend URL. Three install methods are offered: **Hybrid** (recommended: the script plus a `<noscript>` pixel for visitors without JavaScript), **JavaScript** and **Pixel**. A server-side method is listed in the comparison as planned.
+- **How hits travel.** As 6.1 describes, the JavaScript snippet POSTs each hit as a beacon (`navigator.sendBeacon`), falling back to an image request where beacons aren't available. It goes through `/api/collect` on the dashboard's domain, which relays it to the Edge Function, so customers never see a backend URL. Four install methods are offered: **Hybrid** (recommended: the script plus a `<noscript>` pixel for visitors without JavaScript), **JavaScript**, **Pixel** and, since v2, **Server-side**.
+- **Server-side tracking (v2).** Section 11 names server-side tracking as v2, and section 10 puts a REST API out of scope. v2 adds one authenticated endpoint, `POST /api/v1/hits`, called from the site's middleware with a per-site key (stored hashed), so crawlers that only read HTML are counted too. Every method goes through one SQL function, `record_hit()`, which counts each page view once however many methods report it.
 - **The activity log scrolls endlessly** (keyset batches of 50, loaded before you reach the end) instead of pages.
 - **AI referrals were added.** People arriving from ChatGPT, Perplexity, Claude, Gemini, DeepSeek, Kimi, Qwen and others are tracked as their own type, `referral`.
 - **Search engines were added.** Googlebot, Bingbot, Baiduspider, YandexBot and others are stored as `search_engine`, shown alongside, and kept out of the "AI crawler" totals.
