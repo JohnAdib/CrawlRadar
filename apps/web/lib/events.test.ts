@@ -20,9 +20,7 @@ test("selects strictly older events, breaking ties on id", () => {
 
 test("cannot be used to inject other filters", () => {
   const filter = afterCursor({ timestamp: 'x",id.gt.0', id: "1),or(a.eq.b" })
-  expect(filter).toBe(
-    'timestamp.lt."x,id.gt.0",and(timestamp.eq."x,id.gt.0",id.lt.1aeb)'
-  )
+  expect(filter).toBe('timestamp.lt."..0",and(timestamp.eq."..0",id.lt.1aeb)')
 })
 
 test("a full batch means there may be more", () => {

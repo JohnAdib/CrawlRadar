@@ -13,7 +13,7 @@ import {
 import { SiteSwitcher } from "@/components/dashboard/site-switcher"
 import { DashboardSkeleton } from "@/components/dashboard/skeleton"
 import { ExportMenu } from "@/components/export-menu"
-import { parseFilters, toQuery } from "@/lib/filters"
+import { type Filters, parseFilters, toQuery } from "@/lib/filters"
 
 export interface ChromeSite {
   id: string
@@ -26,6 +26,17 @@ export interface ChromeSite {
  * The part of the dashboard that stays put across its views: title, site, site picker,
  * export and the section tabs. Only the content below changes (or shows a skeleton).
  */
+/** The current view's filters: Platforms ignores platform and page, Pages ignores page. */
+function exportFilters(filters: Filters, site: string, section: Section) {
+  const pageApplies = section === "overview" || section === "activity"
+  return {
+    ...filters,
+    site,
+    platform: section === "platforms" ? undefined : filters.platform,
+    page: pageApplies ? filters.page : undefined,
+  }
+}
+
 export function DashboardChrome({
   sites,
   children,
@@ -68,7 +79,7 @@ export function DashboardChrome({
         }
         actions={
           site.hasData && section !== "settings" ? (
-            <ExportMenu filters={{ ...filters, site: site.id }} />
+            <ExportMenu filters={exportFilters(filters, site.id, section)} />
           ) : undefined
         }
       />

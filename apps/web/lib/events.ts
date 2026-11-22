@@ -16,7 +16,7 @@ export function cursorOf(event: Cursor): Cursor {
 
 /** A PostgREST `or` filter for events strictly after `cursor` in (timestamp, id) desc order. */
 export function afterCursor({ timestamp, id }: Cursor): string {
-  const ts = `"${timestamp.replace(/"/g, "")}"`
+  const ts = `"${timestamp.replace(/[^\d\-:.+TZ ]/g, "")}"`
   const key = id.replace(/[^0-9a-f-]/gi, "")
   return `timestamp.lt.${ts},and(timestamp.eq.${ts},id.lt.${key})`
 }

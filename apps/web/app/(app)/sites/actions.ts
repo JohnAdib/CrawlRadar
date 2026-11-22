@@ -17,7 +17,8 @@ function normalizeDomain(input: string): string | null {
   try {
     const host = new URL(value.includes("://") ? value : `https://${value}`)
       .hostname
-    return /^[a-z0-9.-]+\.[a-z0-9-]+$|^localhost$/.test(host)
+    return host.length <= 253 &&
+      /^[a-z0-9.-]+\.[a-z0-9-]+$|^localhost$/.test(host)
       ? host.replace(/^www\./, "")
       : null
   } catch {

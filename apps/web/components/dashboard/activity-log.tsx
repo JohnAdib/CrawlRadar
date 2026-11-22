@@ -32,6 +32,7 @@ export function ActivityLog({
   const [events, setEvents] = useState(initial)
   const [more, setMore] = useState(hasMore(initial.length, pageSize))
   const [loading, setLoading] = useState(false)
+  const [failed, setFailed] = useState(false)
   const sentinel = useRef<HTMLDivElement>(null)
 
   const next = useCallback(async () => {
@@ -42,6 +43,10 @@ export function ActivityLog({
       const batch = await loadMore(cursorOf(last))
       setEvents((current) => [...current, ...batch])
       setMore(hasMore(batch.length, pageSize))
+    } catch {
+      // Stop instead of retrying in a loop while the end of the list is in view.
+      setMore(false)
+      setFailed(true)
     } finally {
       setLoading(false)
     }
@@ -71,6 +76,8 @@ export function ActivityLog({
           <>
             <Spinner /> Loading more visits
           </>
+        ) : failed ? (
+          "Couldn't load more visits. Reload the page to try again."
         ) : (
           `That's all ${visits(total)}`
         )}

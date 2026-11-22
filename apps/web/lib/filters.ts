@@ -50,9 +50,11 @@ export function parseFilters(params: Params): Filters {
   const type = one(params.type)
   return {
     site: one(params.site),
-    range: range && range in RANGES ? (range as Range) : "7d",
+    // hasOwn, not `in`: "?range=toString" must not pass as a range.
+    range: range && Object.hasOwn(RANGES, range) ? (range as Range) : "7d",
     platform: one(params.platform),
-    type: type && type in BOT_TYPES ? (type as BotType) : undefined,
+    type:
+      type && Object.hasOwn(BOT_TYPES, type) ? (type as BotType) : undefined,
     page: one(params.page),
   }
 }

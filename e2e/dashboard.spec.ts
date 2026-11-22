@@ -25,9 +25,32 @@ test("shows the demo site's crawler activity", async ({ page }) => {
   await expect(page.getByText("Top pages")).toBeVisible()
 })
 
-test("filters are kept in the URL", async ({ page }) => {
+test("the date range changes the numbers (AC-4); filters are kept in the URL", async ({
+  page,
+}) => {
+  const card = page
+    .locator("[data-slot=card]")
+    .filter({ hasText: "AI crawler visits" })
+    .first()
+  const visits = async () =>
+    Number(
+      // biome-ignore lint/performance/useDomNodeTextContent: innerText keeps the line break between the number and its delta
+      (await card.innerText())
+        .match(/AI crawler visits\s+([\d,]+)/)?.[1]
+        ?.replaceAll(",", "") ?? -1
+    )
+  // The 7-day number, once its counter has finished animating.
+  let week = -1
+  await expect(async () => {
+    week = await visits()
+    await page.waitForTimeout(300)
+    expect(week).toBeGreaterThan(0)
+    expect(await visits()).toBe(week)
+  }).toPass()
+
   await page.getByRole("radio", { name: "Last 30 days" }).click()
   await expect(page).toHaveURL(/range=30d/)
+  await expect.poll(visits).toBeGreaterThan(week)
   // On desktop every bot type is a one-click segment.
   await page.getByRole("radio", { name: "Referral" }).click()
   await expect(page).toHaveURL(/type=referral/)

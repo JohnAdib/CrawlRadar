@@ -4,7 +4,7 @@ import { Activity, Bot, FileStack, MousePointerClick } from "lucide-react"
 
 import { AnimatedNumber } from "@/components/animated-number"
 import { StatCard } from "@/components/dashboard/stat-card"
-import type { Stats } from "@/lib/stats"
+import { platformRows, type Stats } from "@/lib/stats"
 
 const compact = new Intl.NumberFormat("en", { notation: "compact" }).format
 
@@ -26,8 +26,11 @@ export function StatRow({ stats, hourly }: { stats: Stats; hourly: boolean }) {
     }))
   const { totals } = stats
   // PRD 7.1: the overview names the top platform and the top page.
-  const topPlatform = stats.by_platform[0]
-  const topPage = stats.top_pages[0]
+  // Ranked by AI crawler visits only, like the crawler count beside it.
+  const topPlatform = platformRows(stats.by_bot)
+    .filter((p) => p.ai_visits > 0)
+    .sort((a, b) => b.ai_visits - a.ai_visits)[0]
+  const topPage = stats.pages > 0 ? stats.top_pages[0] : undefined
   return (
     <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
       <StatCard

@@ -39,7 +39,12 @@ export function PagesView({
     : pages
   return (
     <Panel
-      title={`${pages.length} page${pages.length === 1 ? "" : "s"} crawled`}
+      title={
+        // crawler_pages() returns at most 500 pages.
+        pages.length >= 500
+          ? "Top 500 pages"
+          : `${pages.length} page${pages.length === 1 ? "" : "s"} crawled`
+      }
       description="Ranked by visits. Click a page for its report."
       action={
         <InputGroup className="w-40 bg-background sm:w-56">

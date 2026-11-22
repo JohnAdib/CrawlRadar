@@ -35,6 +35,9 @@ describe("parseFilters", () => {
       range: "7d",
       type: undefined,
     })
+    expect(
+      parseFilters({ range: "toString", type: "__proto__" })
+    ).toMatchObject({ range: "7d", type: undefined })
   })
 })
 
