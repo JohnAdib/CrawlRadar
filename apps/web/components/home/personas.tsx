@@ -78,7 +78,7 @@ const PERSONAS: Persona[] = [
     text: "AI referrals count the people ChatGPT, Perplexity, Claude and Gemini send you. Export any view to CSV for decks, spreadsheets and BI tools.",
     points: [
       "AI referrals by assistant",
-      "CSV export of every field",
+      "CSV export of every visit",
       "Shareable links to any filtered view",
     ],
     view: "Export",

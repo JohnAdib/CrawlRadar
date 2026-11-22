@@ -30,9 +30,8 @@ export function ExportCard({
       <CardHeader>
         <CardTitle>Export</CardTitle>
         <CardDescription>
-          Every recorded visit as CSV: time, page, crawler, platform, type, user
-          agent, referrer and anonymised IP hash. Opens in Excel, Sheets or any
-          BI tool.
+          Every recorded visit as CSV: time, page, crawler, platform, type and
+          user agent. Opens in Excel, Sheets or any BI tool.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-wrap gap-2">
