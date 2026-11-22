@@ -25,15 +25,19 @@ export function StepVerify({
 
   // The track function marks the site installed on its first hit: poll for that.
   useEffect(() => {
-    const id = setInterval(async () => {
-      if (await installStatus(site.id)) onVerified()
+    const id = setInterval(() => {
+      // A failed poll is simply tried again on the next tick.
+      installStatus(site.id).then(
+        (ok) => ok && onVerified(),
+        () => {}
+      )
     }, 3000)
     return () => clearInterval(id)
   }, [site.id, onVerified])
 
   const checkNow = () =>
     startCheck(async () => {
-      if (await checkInstall(site.id)) onVerified()
+      if (await checkInstall(site.id).catch(() => false)) onVerified()
       else setMissed(true)
     })
 

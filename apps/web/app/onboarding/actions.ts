@@ -1,22 +1,59 @@
 "use server"
 
-import { isPublicHost, pageHasSnippet } from "@/lib/install-check"
+import { lookup } from "node:dns/promises"
+
+import {
+  isPublicAddress,
+  isPublicHost,
+  pageHasSnippet,
+} from "@/lib/install-check"
 import { createClient } from "@/lib/supabase/server"
 
 const MAX_HTML = 512 * 1024
 
+/** True for a public name that resolves only to public addresses. */
+async function isSafeHost(host: string): Promise<boolean> {
+  if (!isPublicHost(host)) return false
+  // shortcut: checked before the fetch, so DNS rebinding could slip past; pin the IP if it matters.
+  const addresses = await lookup(host, { all: true })
+  return addresses.every((a) => isPublicAddress(a.address))
+}
+
+/** GETs `url`, following up to 3 redirects by hand so that every hop is checked. */
+async function fetchPublic(url: URL, hops = 3): Promise<Response | null> {
+  if (!/^https?:$/.test(url.protocol) || !(await isSafeHost(url.hostname)))
+    return null
+  const res = await fetch(url, {
+    headers: { "user-agent": "CrawlRadar-InstallCheck/1.0" },
+    redirect: "manual",
+    cache: "no-store",
+    signal: AbortSignal.timeout(6000),
+  })
+  const location = res.headers.get("location")
+  if (res.status < 300 || res.status >= 400 || !location) return res
+  return hops > 0 ? fetchPublic(new URL(location, url), hops - 1) : null
+}
+
+/** The start of the page, up to MAX_HTML characters, without downloading the rest. */
+async function readStart(res: Response): Promise<string> {
+  const reader = res.body?.getReader()
+  if (!reader) return ""
+  const decoder = new TextDecoder()
+  let html = ""
+  while (html.length < MAX_HTML) {
+    const { done, value } = await reader.read()
+    if (done) break
+    html += decoder.decode(value, { stream: true })
+  }
+  await reader.cancel()
+  return html
+}
+
 /** Fetches the site's home page and looks for its snippet. Never throws. */
 async function snippetOnHomePage(domain: string, siteId: string) {
-  if (!isPublicHost(domain)) return false
   try {
-    const res = await fetch(`https://${domain}/`, {
-      headers: { "user-agent": "CrawlRadar-InstallCheck/1.0" },
-      redirect: "follow",
-      cache: "no-store",
-      signal: AbortSignal.timeout(6000),
-    })
-    const html = (await res.text()).slice(0, MAX_HTML)
-    return pageHasSnippet(html, siteId)
+    const res = await fetchPublic(new URL(`https://${domain}/`))
+    return res ? pageHasSnippet(await readStart(res), siteId) : false
   } catch {
     return false
   }
