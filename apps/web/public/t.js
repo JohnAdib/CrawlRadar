@@ -6,5 +6,5 @@
   const hit = new URLSearchParams({ sid: id, u: location.href, r: d.referrer })
   const url = new URL("/api/collect", s.src).href
   // POST the hit as a beacon; where beacons aren't available, send it as an image.
-  if (!n.sendBeacon?.(url, hit)) new Image().src = `${url}?t=img&${hit}`
+  if (!n.sendBeacon?.(url, hit)) new Image().src = `${url}?t=js&${hit}`
 })(document, navigator)

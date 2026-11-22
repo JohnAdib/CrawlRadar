@@ -4,7 +4,8 @@ import type { NextRequest } from "next/server"
 // It relays each hit to the `track` Supabase Edge Function, which classifies and stores it,
 // so the ingest logic lives in one place and the dashboard needs no service-role key.
 //   POST (the JavaScript tag's beacon): form-encoded body, relayed as a POST.
-//   GET  (the pixel): fields in the query string, answered with a 1x1 GIF.
+//   GET  (the pixel, or the script without beacons): fields in the query string, answered
+//        with a 1x1 GIF. t=img marks the pixel, t=js the script.
 const TRACK_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/track`
 
 const PIXEL = Uint8Array.from(
